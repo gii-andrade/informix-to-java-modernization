@@ -139,9 +139,9 @@ Adicionou Spring Boot Actuator com endpoints de health, info, metrics e loggers,
 | Métrica | Valor |
 |---|---|
 | Arquivos legados analisados | 10 (6x `.4gl`, 4x `.per`) |
-| Arquivos Java gerados | 70+ |
-| Linhas de código produção | ~4.500 |
-| Linhas de teste | ~3.100 |
+| Arquivos Java gerados | 62 produção + 11 teste = 73 |
+| Linhas de código produção | 3.923 |
+| Linhas de teste | 2.653 |
 | Cobertura funcional | 100% dos módulos do legado |
 | Lacunas corrigidas | 9 identificadas, 9 resolvidas |
 
