@@ -36,7 +36,7 @@ O sistema legado é uma aplicação TUI (Text User Interface) escrita em **Infor
 | Terminal local | API REST com RFC 7807 (Problem Details) |
 | Sem testes | Mockito (unit) + MockMvc + H2 (integração) |
 | Sem observabilidade | Spring Boot Actuator + logging estruturado |
-| Sem containerização | Dockerfile multi-stage + docker-compose (PostgreSQL 16) |
+| Sem containerização | Dockerfile multi-stage + Docker/Podman Compose (PostgreSQL 16) |
 
 ### Módulos Portados
 
@@ -93,12 +93,29 @@ Diagrama completo: [`docs/arquitetura.md`](docs/arquitetura.md)
 
 ## Como Rodar
 
-### Com Docker (recomendado)
+### Com Docker
 
 ```bash
 cd moderno
 docker compose up --build
 ```
+
+### Com Podman (alternativa para ambientes corporativos IBM/Red Hat)
+
+O [`Dockerfile`](moderno/Dockerfile) e o [`docker-compose.yml`](moderno/docker-compose.yml) são 100% compatíveis com Podman — nenhuma alteração necessária.
+
+```bash
+# Instalar podman-compose (uma vez)
+pip install podman-compose        # Linux
+brew install podman-compose       # macOS
+
+# Subir os serviços
+cd moderno
+podman compose up --build
+```
+
+> O Podman roda rootless (sem daemon root), tornando-o preferível em ambientes
+> corporativos com restrições de segurança.
 
 Aguarde ~30 s até ambos os serviços ficarem `healthy`. A API sobe em `http://localhost:8080/api/v1`.
 
