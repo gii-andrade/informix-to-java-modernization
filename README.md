@@ -105,15 +105,24 @@ docker compose up --build
 O [`Dockerfile`](moderno/Dockerfile) e o [`docker-compose.yml`](moderno/docker-compose.yml) são 100% compatíveis com Podman — nenhuma alteração necessária.
 
 ```bash
-# Instalar podman-compose (uma vez)
-pip install podman-compose        # Linux
-brew install podman-compose       # macOS
+# 1. Instalar Podman e podman-compose (uma vez)
+brew install podman
+brew install podman-compose
 
-# Subir os serviços
+# 2. Criar e iniciar a VM Linux local (uma vez por máquina)
+podman machine init
+podman machine start
+
+# 3. Subir os serviços
 cd moderno
 podman compose up --build
 ```
 
+> **`podman machine init/start` é necessário no macOS** porque containers Linux
+> não rodam nativamente — o Podman cria uma VM leve em background (o Docker Desktop
+> faz o mesmo por baixo dos panos). No Linux corporativo esses dois comandos não
+> são necessários.
+>
 > O Podman roda rootless (sem daemon root), tornando-o preferível em ambientes
 > corporativos com restrições de segurança.
 
