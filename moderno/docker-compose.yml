@@ -1,0 +1,62 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# docker-compose.yml — pedidos-service + PostgreSQL
+#
+# Sobe dois serviços:
+#   db  — PostgreSQL 16 com o schema do legado Informix migrado
+#   app — pedidos-service compilado via Dockerfile
+#
+# Uso:
+#   docker compose up --build      # primeira vez
+#   docker compose up -d           # modo background
+#   docker compose down -v         # derruba e apaga volumes
+# ─────────────────────────────────────────────────────────────────────────────
+services:
+
+  db:
+    image: postgres:16-alpine
+    container_name: pedidos-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       pedidos_db
+      POSTGRES_USER:     pedidos_user
+      POSTGRES_PASSWORD: pedidos_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      # Persiste dados entre restarts
+      - pedidos_data:/var/lib/postgresql/data
+      # Aplica o schema do legado Informix na criação do banco
+      - ../legado/sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ../legado/sql/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pedidos_user -d pedidos_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pedidos-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL:      jdbc:postgresql://db:5432/pedidos_db
+      SPRING_DATASOURCE_USERNAME: pedidos_user
+      SPRING_DATASOURCE_PASSWORD: pedidos_pass
+      # Troque por um segredo forte em produção
+      JWT_SECRET: substitua-por-segredo-de-producao-com-minimo-32-chars
+      JWT_EXPIRATION_MS: "86400000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pedidos_data:

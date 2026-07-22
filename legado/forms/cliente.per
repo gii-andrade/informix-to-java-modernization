@@ -1,0 +1,19 @@
+DATABASE pedidos_db
+TABLES
+cliente
+END
+SCREEN
+{
++----------------------------------------------------------------+
+| Cadastro de Cliente                                            |
+| Razao social: [razao                                          ] |
+| Documento:    [documento           ] Ativo: [ativo]            |
+| E-mail:       [email                                          ] |
++----------------------------------------------------------------+
+}
+ATTRIBUTES
+razao = cliente.razao_social, REQUIRED;
+documento = cliente.documento, REQUIRED;
+email = cliente.email;
+ativo = cliente.ativo, REQUIRED;
+END

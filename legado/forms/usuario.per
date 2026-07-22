@@ -1,0 +1,21 @@
+DATABASE pedidos_db
+TABLES
+usuario
+END
+SCREEN
+{
++----------------------------------------------------------------+
+| Cadastro de Usuario                                            |
+| Login: [login                    ] Perfil: [perfil            ] |
+| Nome:  [nome                                               ]  |
+| Senha: [senha                                              ]  |
+| Ativo: [ativo]                                                |
++----------------------------------------------------------------+
+}
+ATTRIBUTES
+login = usuario.login, REQUIRED;
+nome = usuario.nome, REQUIRED;
+senha = usuario.senha_hash, REQUIRED, INVISIBLE;
+perfil = usuario.perfil, REQUIRED;
+ativo = usuario.ativo;
+END

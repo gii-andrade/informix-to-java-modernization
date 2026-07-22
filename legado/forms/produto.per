@@ -1,0 +1,21 @@
+DATABASE pedidos_db
+TABLES
+produto
+END
+SCREEN
+{
++----------------------------------------------------------------+
+| Cadastro de Produto                                            |
+| Codigo: [codigo                    ]                           |
+| Descricao: [descricao                                        ] |
+| Preco: [preco               ] Estoque: [estoque              ] |
+| Ativo: [ativo]                                                 |
++----------------------------------------------------------------+
+}
+ATTRIBUTES
+codigo = produto.codigo, REQUIRED;
+descricao = produto.descricao, REQUIRED;
+preco = produto.preco_venda, REQUIRED;
+estoque = produto.estoque_atual, REQUIRED;
+ativo = produto.ativo, REQUIRED;
+END

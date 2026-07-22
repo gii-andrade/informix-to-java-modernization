@@ -1,0 +1,28 @@
+# ── Maven ─────────────────────────────────────────────────────────
+moderno/target/
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# ── IDEs ──────────────────────────────────────────────────────────
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/settings.json
+*.swp
+*.swo
+
+# ── macOS ─────────────────────────────────────────────────────────
+.DS_Store
+**/.DS_Store
+
+# ── Logs ──────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Segredos ──────────────────────────────────────────────────────
+# O application.properties commitado só tem valores de exemplo.
+# Crie application-prod.properties localmente para produção.
+*.env
+.env
+.env.*

@@ -1,0 +1,20 @@
+DATABASE pedidos_db
+TABLES
+pedido
+END
+SCREEN
+{
++----------------------------------------------------------------+
+| Cadastro de Pedido                                             |
+| Cliente: [v_cliente  ] Usuario: [v_usuario  ]                  |
+| Status:  [v_status            ] Total: [v_total              ] |
+| Observacao: [v_observacao                                      ] |
++----------------------------------------------------------------+
+}
+ATTRIBUTES
+v_cliente = pedido.cliente_id, REQUIRED;
+v_usuario = pedido.usuario_id, REQUIRED;
+v_status = pedido.status;
+v_total = pedido.valor_total;
+v_observacao = pedido.observacao;
+END
