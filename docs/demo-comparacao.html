@@ -214,7 +214,9 @@
 <!-- Tabs -->
 <div class="tabs">
   <a class="tab active" data-tab="clientes">Clientes</a>
+  <a class="tab" data-tab="produtos">Produtos</a>
   <a class="tab" data-tab="pedidos">Pedidos</a>
+  <a class="tab" data-tab="usuarios">Usuários</a>
   <a class="tab" data-tab="relatorio">Relatório</a>
   <a class="tab" data-tab="seguranca">Segurança</a>
   <a class="tab" data-tab="lacunas">Lacunas Corrigidas</a>
@@ -312,6 +314,102 @@
   </div>
 </div>
 
+<!-- ══════════ PRODUTOS ══════════ -->
+<div class="content" id="tab-produtos">
+  <div class="split">
+
+    <div class="panel panel-legacy">
+      <div class="panel-header">
+        <span class="panel-label">Legado — Terminal Informix-4GL</span>
+        <span class="panel-tag">PRODUTO.4GL</span>
+      </div>
+      <div class="panel-body">
+        <div class="terminal">
+          <div class="title-bar">| SISTEMA DE PEDIDOS — PRODUTOS |</div>
+          <div class="menu">INCLUIR&nbsp; CONSULTAR&nbsp; ALTERAR&nbsp; EXCLUIR&nbsp; VOLTAR</div>
+          <br>
+          <div>──────────────────────────────────────────</div>
+          <div><span class="field-label">Codigo: </span><span class="field-value">PROD-001</span></div>
+          <div><span class="field-label">Descricao: </span><span class="field-value">Caneta Esferografica Azul</span></div>
+          <div><span class="field-label">Unidade: </span><span class="field-value">UN</span></div>
+          <div><span class="field-label">Preco Venda: </span><span class="field-value">2.50</span></div>
+          <div><span class="field-label">Estoque Atual: </span><span class="field-value">100</span></div>
+          <div><span class="field-label">Ativo: </span><span class="field-value">S</span></div>
+          <br>
+          <div class="c-comment" style="color:#f85149">✗ sem operação de alterar preço separada</div>
+          <div class="c-comment" style="color:#f85149">✗ estoque definido só na inclusão</div>
+          <div class="c-comment" style="color:#f85149">✗ sem ajuste de estoque avulso</div>
+          <br>
+          <div class="confirm">Confirma inclusao? (S/N): S</div>
+          <div class="success">Produto incluido.</div>
+          <div class="prompt">Press ENTER to continue...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel panel-modern">
+      <div class="panel-header">
+        <span class="panel-label">Moderno — API REST</span>
+        <span class="panel-tag">POST /API/V1/PRODUTOS</span>
+      </div>
+      <div class="panel-body">
+        <div class="code-block">
+<span class="c-comment">// Criar produto</span>
+<span class="c-method">POST</span> <span class="c-path">/api/v1/produtos</span>
+<span class="c-punct">{</span>
+  <span class="c-key">"codigo"</span><span class="c-punct">:</span> <span class="c-str">"PROD-001"</span><span class="c-punct">,</span>
+  <span class="c-key">"descricao"</span><span class="c-punct">:</span> <span class="c-str">"Caneta Esferográfica Azul"</span><span class="c-punct">,</span>
+  <span class="c-key">"unidadeMedida"</span><span class="c-punct">:</span> <span class="c-str">"UN"</span><span class="c-punct">,</span>
+  <span class="c-key">"precoVenda"</span><span class="c-punct">:</span> <span class="c-num">2.50</span><span class="c-punct">,</span>
+  <span class="c-key">"estoqueAtual"</span><span class="c-punct">:</span> <span class="c-num">100.000</span><span class="c-punct">,</span>
+  <span class="c-key">"ativo"</span><span class="c-punct">:</span> <span class="c-str">"S"</span>
+<span class="c-punct">}</span>
+<span class="c-status">201 Created</span>
+<span class="c-punct">{</span> <span class="c-key">"id"</span><span class="c-punct">:</span> <span class="c-num">7</span><span class="c-punct">,</span> <span class="c-key">"codigo"</span><span class="c-punct">:</span> <span class="c-str">"PROD-001"</span><span class="c-punct">,</span> <span class="c-key">"precoVenda"</span><span class="c-punct">:</span> <span class="c-num">2.50</span><span class="c-punct">, ... }</span>
+
+<span class="c-comment">// Operações especializadas — novas no moderno</span>
+<span class="c-method">PATCH</span> <span class="c-path">/api/v1/produtos/7/preco?valor=3.99</span>
+<span class="c-status">200 OK</span> <span class="c-punct">{</span> <span class="c-key">"precoVenda"</span><span class="c-punct">:</span> <span class="c-num">3.99</span><span class="c-punct">, ... }</span>
+
+<span class="c-method">PATCH</span> <span class="c-path">/api/v1/produtos/7/estoque?valor=250.000</span>
+<span class="c-status">200 OK</span> <span class="c-punct">{</span> <span class="c-key">"estoqueAtual"</span><span class="c-punct">:</span> <span class="c-num">250.000</span><span class="c-punct">, ... }</span>
+
+<span class="c-comment">// Listar todos</span>
+<span class="c-method">GET</span> <span class="c-path">/api/v1/produtos</span>
+<span class="c-status">200 OK</span> <span class="c-punct">[{ "id": 1, ... }, { "id": 2, ... }, ...]</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="bullets-row">
+    <div class="panel panel-legacy">
+      <div class="bullets">
+        <h4>Legado — Limitações</h4>
+        <ul>
+          <li>Alterar preço: <strong>excluir e recriar</strong> o produto</li>
+          <li>Estoque só definido <strong>na inclusão</strong></li>
+          <li><strong>Sem ajuste de estoque</strong> avulso</li>
+          <li>Código duplicado: erro genérico de banco</li>
+          <li>Sem listagem de todos os produtos</li>
+        </ul>
+      </div>
+    </div>
+    <div class="panel panel-modern">
+      <div class="bullets">
+        <h4>Moderno — Melhorias</h4>
+        <ul>
+          <li>PATCH <strong>/preco</strong> — atualiza só o preço, sem recriar</li>
+          <li>PATCH <strong>/estoque</strong> — ajuste avulso a qualquer momento</li>
+          <li>409 Conflict descritivo em código duplicado</li>
+          <li>GET <strong>/produtos</strong> — listagem completa paginável</li>
+          <li>PUT completo para substituição total dos dados</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════ PEDIDOS ══════════ -->
 <div class="content" id="tab-pedidos">
   <div class="split">
@@ -400,6 +498,102 @@
           <li><strong>@Transactional</strong> — operação 100% atômica</li>
           <li>Máquina de estados: <strong>422 em transição inválida</strong></li>
           <li>PATCH <strong>/confirmar</strong> e <strong>/faturar</strong> implementados</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ USUÁRIOS ══════════ -->
+<div class="content" id="tab-usuarios">
+  <div class="split">
+
+    <div class="panel panel-legacy">
+      <div class="panel-header">
+        <span class="panel-label">Legado — Terminal Informix-4GL</span>
+        <span class="panel-tag">USUARIO.4GL</span>
+      </div>
+      <div class="panel-body">
+        <div class="terminal">
+          <div class="title-bar">| SISTEMA DE PEDIDOS — USUARIOS |</div>
+          <div class="menu">INCLUIR&nbsp; DESATIVAR&nbsp; VOLTAR</div>
+          <br>
+          <div>──────────────────────────────────────────</div>
+          <div><span class="field-label">Login: </span><span class="field-value">joao.silva</span></div>
+          <div><span class="field-label">Nome: </span><span class="field-value">Joao da Silva</span></div>
+          <div><span class="field-label">Senha: </span><span class="field-value">****</span></div>
+          <div><span class="field-label">Perfil: </span><span class="field-value">OPERADOR</span></div>
+          <br>
+          <div class="c-comment" style="color:#f85149">✗ senha gravada em TEXTO PURO no banco</div>
+          <div class="c-comment" style="color:#f85149">✗ desativação é irreversível</div>
+          <div class="c-comment" style="color:#f85149">✗ sem alterar dados do usuário</div>
+          <div class="c-comment" style="color:#f85149">✗ sem troca de senha segura</div>
+          <br>
+          <div class="confirm">Confirma inclusao? (S/N): S</div>
+          <div class="success">Usuario incluido.</div>
+          <div class="prompt">Press ENTER to continue...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel panel-modern">
+      <div class="panel-header">
+        <span class="panel-label">Moderno — API REST</span>
+        <span class="panel-tag">POST /API/V1/USUARIOS</span>
+      </div>
+      <div class="panel-body">
+        <div class="code-block">
+<span class="c-comment">// Criar usuário — senha convertida em BCrypt</span>
+<span class="c-method">POST</span> <span class="c-path">/api/v1/usuarios</span>
+<span class="c-punct">{</span>
+  <span class="c-key">"login"</span><span class="c-punct">:</span> <span class="c-str">"joao.silva"</span><span class="c-punct">,</span>
+  <span class="c-key">"nome"</span><span class="c-punct">:</span> <span class="c-str">"João da Silva"</span><span class="c-punct">,</span>
+  <span class="c-key">"senha"</span><span class="c-punct">:</span> <span class="c-str">"senha1234"</span><span class="c-punct">,</span>  <span class="c-comment">← BCrypt no banco</span>
+  <span class="c-key">"perfil"</span><span class="c-punct">:</span> <span class="c-str">"OPERADOR"</span>
+<span class="c-punct">}</span>
+<span class="c-status">201 Created</span>
+<span class="c-punct">{</span> <span class="c-key">"id"</span><span class="c-punct">:</span> <span class="c-num">3</span><span class="c-punct">,</span> <span class="c-key">"login"</span><span class="c-punct">:</span> <span class="c-str">"joao.silva"</span><span class="c-punct">,</span> <span class="c-key">"perfil"</span><span class="c-punct">:</span> <span class="c-str">"OPERADOR"</span><span class="c-punct">, ... }</span>
+<span class="c-comment">// senhaHash NUNCA aparece na resposta</span>
+
+<span class="c-comment">// Desativar e reativar (lacuna corrigida)</span>
+<span class="c-method">PATCH</span> <span class="c-path">/api/v1/usuarios/3/desativar</span>  <span class="c-status">200 OK</span>
+<span class="c-method">PATCH</span> <span class="c-path">/api/v1/usuarios/3/reativar</span>   <span class="c-status">200 OK</span>
+
+<span class="c-comment">// Troca de senha segura — exige senha atual</span>
+<span class="c-method">PATCH</span> <span class="c-path">/api/v1/usuarios/3/senha</span>
+<span class="c-punct">{</span> <span class="c-key">"senhaAtual"</span><span class="c-punct">:</span> <span class="c-str">"senha1234"</span><span class="c-punct">,</span> <span class="c-key">"senhaNova"</span><span class="c-punct">:</span> <span class="c-str">"novaSenha99"</span> <span class="c-punct">}</span>
+<span class="c-status">204 No Content</span>
+
+<span class="c-comment">// Filtrar por perfil</span>
+<span class="c-method">GET</span> <span class="c-path">/api/v1/usuarios?perfil=OPERADOR</span>
+<span class="c-status">200 OK</span> <span class="c-punct">[{ "id": 3, "login": "joao.silva", ... }]</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="bullets-row">
+    <div class="panel panel-legacy">
+      <div class="bullets">
+        <h4>Legado — Bugs e Lacunas</h4>
+        <ul>
+          <li>Senha gravada em <strong>texto puro</strong> no banco</li>
+          <li>Desativação <strong>irreversível</strong> — sem reativar</li>
+          <li><strong>Sem alterar</strong> dados do usuário após criação</li>
+          <li>Sem troca de senha segura</li>
+          <li>Sem listagem ou filtro por perfil</li>
+        </ul>
+      </div>
+    </div>
+    <div class="panel panel-modern">
+      <div class="bullets">
+        <h4>Moderno — Correções</h4>
+        <ul>
+          <li>Senha sempre em <strong>BCrypt</strong> — nunca exposta</li>
+          <li>PATCH <strong>/reativar</strong> — desativação reversível</li>
+          <li>PUT <strong>/usuarios/{id}</strong> para alterar dados</li>
+          <li>PATCH <strong>/senha</strong> exige confirmação da senha atual</li>
+          <li>GET <strong>?perfil=ADMIN|OPERADOR|CONSULTA</strong></li>
         </ul>
       </div>
     </div>
