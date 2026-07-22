@@ -32,8 +32,8 @@ Características do desenho atual:
 - Validações e tratamento de erros dependem do fluxo interativo do 4GL.
 - Senhas exigem evolução para armazenamento seguro com hash forte e política
   de autenticação apropriada.
-- Não há testes automatizados, pipeline de build, observabilidade ou
-  empacotamento para execução em contêiner.
+- Não há testes automatizados, observabilidade ou empacotamento para execução
+  em contêiner.
 - Evoluções na interface exigem alteração dos formulários de terminal.
 
 ## Objetivo da modernização
@@ -56,5 +56,6 @@ Resultados esperados:
 - Interface web independente do back-end.
 - Autenticação e autorização baseadas em padrões atuais.
 - Testes automatizados, logs estruturados, métricas e execução em contêiner.
+- Pipeline de CI com GitHub Actions (build + testes em cada push).
 - Base clara para o IBM Bob analisar o legado e apoiar a transformação para
   Java/Spring Boot.
