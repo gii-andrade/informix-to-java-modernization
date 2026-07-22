@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Sistema de Pedidos — Modernização Informix-4GL vs Spring Boot 3</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: 14px;
+    background: #0d1117;
+    color: #e6edf3;
+  }
+
+  /* ── Top bar ── */
+  .topbar {
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
+    padding: 12px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .topbar-title { font-size: 16px; font-weight: 700; color: #e6edf3; }
+  .topbar-sub   { font-size: 12px; color: #8b949e; margin-top: 2px; }
+  .badges { display: flex; gap: 8px; }
+  .badge {
+    font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px;
+  }
+  .badge-legacy  { background: #3d1a1a; color: #f85149; border: 1px solid #6e2020; }
+  .badge-modern  { background: #0d2d1a; color: #3fb950; border: 1px solid #1a5c30; }
+
+  /* ── Tabs ── */
+  .tabs {
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
+    padding: 0 32px;
+    display: flex;
+    gap: 2px;
+  }
+  .tab {
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #8b949e;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    text-decoration: none;
+  }
+  .tab:hover { color: #e6edf3; }
+  .tab.active { color: #e6edf3; border-bottom-color: #f78166; }
+
+  /* ── Content ── */
+  .content { display: none; padding: 28px 32px 60px; }
+  .content.active { display: block; }
+
+  /* ── Split ── */
+  .split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+
+  /* ── Panel ── */
+  .panel {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .panel-header {
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #30363d;
+  }
+  .panel-legacy .panel-header { background: #1c1010; }
+  .panel-modern .panel-header { background: #0d1f12; }
+  .panel-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+  .panel-legacy .panel-label { color: #f85149; }
+  .panel-modern .panel-label { color: #3fb950; }
+  .panel-tag {
+    font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 3px;
+    font-family: "SF Mono", monospace;
+  }
+  .panel-legacy .panel-tag { background: #3d1a1a; color: #f85149; }
+  .panel-modern .panel-tag { background: #0d2d1a; color: #3fb950; }
+  .panel-body { padding: 16px; }
+
+  /* ── Terminal ── */
+  .terminal {
+    background: #0d1117;
+    border: 1px solid #21262d;
+    border-radius: 5px;
+    padding: 14px 16px;
+    font-family: "SF Mono", "Cascadia Mono", monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    color: #b3b3b3;
+  }
+  .terminal .title-bar {
+    border: 2px solid #3fb950;
+    padding: 2px 8px;
+    display: inline-block;
+    color: #e6edf3;
+    font-weight: 700;
+    font-size: 13px;
+    margin-bottom: 14px;
+    letter-spacing: .04em;
+  }
+  .terminal .menu { color: #3fb950; letter-spacing: .08em; }
+  .terminal .field-label { color: #b3b3b3; }
+  .terminal .field-value { color: #79c0ff; text-decoration: underline; }
+  .terminal .confirm { color: #e6edf3; }
+  .terminal .success { color: #3fb950; }
+  .terminal .prompt  { color: #8b949e; margin-top: 10px; }
+
+  /* ── Code block ── */
+  .code-block {
+    background: #0d1117;
+    border: 1px solid #21262d;
+    border-radius: 5px;
+    padding: 14px 16px;
+    font-family: "SF Mono", "Cascadia Mono", monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    overflow-x: auto;
+  }
+  .c-comment { color: #8b949e; }
+  .c-method   { color: #79c0ff; font-weight: 700; }
+  .c-path     { color: #e6edf3; }
+  .c-header   { color: #d2a8ff; }
+  .c-key      { color: #79c0ff; }
+  .c-str      { color: #a5d6ff; }
+  .c-num      { color: #f2cc60; }
+  .c-status   { color: #3fb950; font-weight: 700; }
+  .c-punct    { color: #8b949e; }
+
+  /* ── Bullets ── */
+  .bullets-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+  .bullets { padding: 14px 16px; }
+  .bullets h4 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 10px; }
+  .panel-legacy .bullets h4 { color: #f85149; }
+  .panel-modern .bullets h4 { color: #3fb950; }
+  .bullets ul { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .bullets li { display: flex; gap: 8px; font-size: 13px; color: #c9d1d9; }
+  .bullets li::before { content: "•"; flex-shrink: 0; }
+  .panel-legacy .bullets li::before { color: #f85149; }
+  .panel-modern .bullets li::before { color: #3fb950; }
+  .bullets strong { color: #e6edf3; }
+
+  /* ── Gap table ── */
+  .gap-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .gap-table th {
+    text-align: left; padding: 8px 12px;
+    background: #161b22; border: 1px solid #30363d;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #8b949e;
+  }
+  .gap-table td { padding: 8px 12px; border: 1px solid #30363d; vertical-align: top; }
+  .gap-table tr:nth-child(even) td { background: #0d1117; }
+  .before { color: #f85149; }
+  .after  { color: #3fb950; }
+  .gap-num { font-weight: 700; color: #8b949e; }
+
+  /* ── Security ── */
+  .security-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+  .sec-card {
+    background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px;
+  }
+  .sec-card h4 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: #8b949e; margin-bottom: 12px; }
+  .sec-item { margin-bottom: 10px; }
+  .sec-label { font-size: 11px; color: #8b949e; margin-bottom: 3px; }
+  .sec-value { font-size: 13px; font-weight: 600; }
+  .sec-value.good { color: #3fb950; }
+  .sec-value.bad  { color: #f85149; }
+  .sec-value.warn { color: #f2cc60; }
+
+  .profile-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .profile-chip { padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; }
+  .chip-admin { background: #ffe4e6; color: #9f1239; }
+  .chip-op    { background: #ede9fe; color: #6d28d9; }
+  .chip-cons  { background: #dbeafe; color: #1d4ed8; }
+
+  footer {
+    text-align: center; font-size: 11px; color: #8b949e;
+    border-top: 1px solid #30363d; padding: 16px 32px 28px; font-weight: 300;
+  }
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div>
+    <div class="topbar-title">Sistema de Pedidos — Modernização</div>
+    <div class="topbar-sub">Comparação visual: Informix-4GL legado vs API REST Spring Boot 3</div>
+  </div>
+  <div class="badges">
+    <span class="badge badge-legacy">Legado 1990s</span>
+    <span class="badge badge-modern">Moderno 2026</span>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <a class="tab active" data-tab="clientes">Clientes</a>
+  <a class="tab" data-tab="pedidos">Pedidos</a>
+  <a class="tab" data-tab="relatorio">Relatório</a>
+  <a class="tab" data-tab="seguranca">Segurança</a>
+  <a class="tab" data-tab="lacunas">Lacunas Corrigidas</a>
+</div>
+
+<!-- ══════════ CLIENTES ══════════ -->
+<div class="content active" id="tab-clientes">
+  <div class="split">
+
+    <div class="panel panel-legacy">
+      <div class="panel-header">
+        <span class="panel-label">Legado — Terminal Informix-4GL</span>
+        <span class="panel-tag">CLIENTE.4GL</span>
+      </div>
+      <div class="panel-body">
+        <div class="terminal">
+          <div class="title-bar">| SISTEMA DE PEDIDOS — CLIENTES |</div>
+          <div class="menu">INCLUIR&nbsp; CONSULTAR&nbsp; ALTERAR&nbsp; EXCLUIR&nbsp; VOLTAR</div>
+          <br>
+          <div>──────────────────────────────────────────</div>
+          <div><span class="field-label">Razao Social: </span><span class="field-value">Almeida &amp; Filhos Comercio Ltda.</span></div>
+          <div><span class="field-label">Nome Fantasia: </span><span class="field-value">Almeida Materiais</span></div>
+          <div><span class="field-label">Documento: </span><span class="field-value">12.345.678/0001-90</span></div>
+          <div><span class="field-label">Email: </span><span class="field-value">compras@almeidamateriais.com.br</span></div>
+          <div><span class="field-label">Telefone: </span><span class="field-value">(11) 3456-1200</span></div>
+          <div><span class="field-label">Endereco: </span><span class="field-value">Rua das Acacias, 245</span></div>
+          <div><span class="field-label">Cidade: </span><span class="field-value">Sao Paulo</span><span class="field-label"> UF: </span><span class="field-value">SP</span></div>
+          <br>
+          <div>──────────────────────────────────────────</div>
+          <div class="confirm">Confirma inclusao? (S/N): S</div>
+          <div class="success">Cliente incluido.</div>
+          <div class="prompt">Press ENTER to continue...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel panel-modern">
+      <div class="panel-header">
+        <span class="panel-label">Moderno — API REST</span>
+        <span class="panel-tag">GET /API/V1/CLIENTES</span>
+      </div>
+      <div class="panel-body">
+        <div class="code-block">
+<span class="c-comment">// Requisição HTTP</span>
+<span class="c-method">GET</span> <span class="c-path">/api/v1/clientes</span>
+<span class="c-header">Authorization:</span> <span class="c-str">Bearer eyJhbGci...</span>
+
+<span class="c-comment">// Resposta — 200 OK (dados reais do banco)</span>
+<span class="c-status">200 OK</span>
+<span class="c-punct">[</span>
+  <span class="c-punct">{</span>
+    <span class="c-key">"id"</span><span class="c-punct">:</span> <span class="c-num">1</span><span class="c-punct">,</span>
+    <span class="c-key">"razaoSocial"</span><span class="c-punct">:</span> <span class="c-str">"Almeida &amp; Filhos Comércio Ltda."</span><span class="c-punct">,</span>
+    <span class="c-key">"nomeFantasia"</span><span class="c-punct">:</span> <span class="c-str">"Almeida Materiais"</span><span class="c-punct">,</span>
+    <span class="c-key">"documento"</span><span class="c-punct">:</span> <span class="c-str">"12.345.678/0001-90"</span><span class="c-punct">,</span>
+    <span class="c-key">"email"</span><span class="c-punct">:</span> <span class="c-str">"compras@almeidamateriais.com.br"</span><span class="c-punct">,</span>
+    <span class="c-key">"telefone"</span><span class="c-punct">:</span> <span class="c-str">"(11) 3456-1200"</span><span class="c-punct">,</span>
+    <span class="c-key">"cidade"</span><span class="c-punct">:</span> <span class="c-str">"São Paulo"</span><span class="c-punct">,</span>
+    <span class="c-key">"uf"</span><span class="c-punct">:</span> <span class="c-str">"SP"</span><span class="c-punct">,</span>
+    <span class="c-key">"ativo"</span><span class="c-punct">:</span> <span class="c-str">"S"</span>
+  <span class="c-punct">},</span>
+  <span class="c-punct">{</span> <span class="c-key">"id"</span><span class="c-punct">:</span> <span class="c-num">2</span><span class="c-punct">,</span> <span class="c-key">"razaoSocial"</span><span class="c-punct">:</span> <span class="c-str">"Tecnologia Horizonte S.A."</span><span class="c-punct">, ... },</span>
+  <span class="c-punct">{</span> <span class="c-key">"id"</span><span class="c-punct">:</span> <span class="c-num">3</span><span class="c-punct">,</span> <span class="c-key">"razaoSocial"</span><span class="c-punct">:</span> <span class="c-str">"Café do Vale Indústria..."</span><span class="c-punct">, ... }</span>
+<span class="c-punct">]</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="bullets-row">
+    <div class="panel panel-legacy">
+      <div class="bullets">
+        <h4>Legado — Limitações</h4>
+        <ul>
+          <li><strong>Interface de texto</strong> só no servidor</li>
+          <li><strong>Sem API</strong> — impossível integrar</li>
+          <li>Dados visíveis <strong>só no terminal</strong></li>
+          <li>Sem paginação, filtros ou ordenação</li>
+          <li>Documento duplicado: erro genérico de banco</li>
+        </ul>
+      </div>
+    </div>
+    <div class="panel panel-modern">
+      <div class="bullets">
+        <h4>Moderno — Melhorias</h4>
+        <ul>
+          <li><strong>API REST</strong> consumível por qualquer cliente</li>
+          <li>Filtragem por parâmetros: <strong>?ativo=S</strong></li>
+          <li>Respostas <strong>JSON estruturado</strong></li>
+          <li>Acessível de qualquer lugar com JWT</li>
+          <li>409 Conflict descritivo em documento duplicado</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ PEDIDOS ══════════ -->
+<div class="content" id="tab-pedidos">
+  <div class="split">
+
+    <div class="panel panel-legacy">
+      <div class="panel-header">
+        <span class="panel-label">Legado — Terminal Informix-4GL</span>
+        <span class="panel-tag">PEDIDO.4GL</span>
+      </div>
+      <div class="panel-body">
+        <div class="terminal">
+          <div class="title-bar">| SISTEMA DE PEDIDOS — NOVO PEDIDO |</div>
+          <div class="menu">INCLUIR&nbsp; CONSULTAR&nbsp; CANCELAR&nbsp; VOLTAR</div>
+          <br>
+          <div><span class="field-label">Cliente ID: </span><span class="field-value">1</span></div>
+          <div><span class="field-label">Usuario ID: </span><span class="field-value">1</span></div>
+          <div><span class="field-label">Observacao: </span><span class="field-value">Entrega urgente</span></div>
+          <br>
+          <div>── ITENS ──────────────────────────────────</div>
+          <div><span class="field-label">Produto ID: </span><span class="field-value">1</span><span class="field-label">  Qtde: </span><span class="field-value">10</span><span class="field-label">  Desc: </span><span class="field-value">0.00</span></div>
+          <div><span class="field-label">Produto ID: </span><span class="field-value">2</span><span class="field-label">  Qtde: </span><span class="field-value">2</span><span class="field-label">  Desc: </span><span class="field-value">0.00</span></div>
+          <div class="c-comment" style="color:#f2cc60; margin-top:8px">⚠ desconto sempre 0 — hardcoded</div>
+          <div class="c-comment" style="color:#f85149">✗ estoque NÃO é atualizado</div>
+          <div class="c-comment" style="color:#f85149">✗ INSERT fora de transação</div>
+          <br>
+          <div class="success">Pedido incluido. Total: R$ 29.50</div>
+          <div class="prompt">Press ENTER to continue...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel panel-modern">
+      <div class="panel-header">
+        <span class="panel-label">Moderno — API REST</span>
+        <span class="panel-tag">POST /API/V1/PEDIDOS</span>
+      </div>
+      <div class="panel-body">
+        <div class="code-block">
+<span class="c-comment">// Uma requisição atômica — cabeçalho + itens</span>
+<span class="c-method">POST</span> <span class="c-path">/api/v1/pedidos</span>
+<span class="c-header">Authorization:</span> <span class="c-str">Bearer eyJ...</span>
+<span class="c-punct">{</span>
+  <span class="c-key">"clienteId"</span><span class="c-punct">:</span> <span class="c-num">1</span><span class="c-punct">,</span> <span class="c-key">"usuarioId"</span><span class="c-punct">:</span> <span class="c-num">1</span><span class="c-punct">,</span>
+  <span class="c-key">"observacao"</span><span class="c-punct">:</span> <span class="c-str">"Entrega urgente"</span><span class="c-punct">,</span>
+  <span class="c-key">"itens"</span><span class="c-punct">: [</span>
+    <span class="c-punct">{</span> <span class="c-key">"produtoId"</span><span class="c-punct">:</span> <span class="c-num">1</span><span class="c-punct">,</span> <span class="c-key">"quantidade"</span><span class="c-punct">:</span> <span class="c-num">10.000</span><span class="c-punct">,</span> <span class="c-key">"desconto"</span><span class="c-punct">:</span> <span class="c-num">0.00</span> <span class="c-punct">},</span>
+    <span class="c-punct">{</span> <span class="c-key">"produtoId"</span><span class="c-punct">:</span> <span class="c-num">2</span><span class="c-punct">,</span> <span class="c-key">"quantidade"</span><span class="c-punct">:</span> <span class="c-num">2.000</span><span class="c-punct">,</span> <span class="c-key">"desconto"</span><span class="c-punct">:</span> <span class="c-num">5.00</span> <span class="c-punct">}</span>
+  <span class="c-punct">]</span>
+<span class="c-punct">}</span>
+
+<span class="c-status">201 Created</span>
+<span class="c-punct">{</span>
+  <span class="c-key">"id"</span><span class="c-punct">:</span> <span class="c-num">42</span><span class="c-punct">,</span> <span class="c-key">"status"</span><span class="c-punct">:</span> <span class="c-str">"ABERTO"</span><span class="c-punct">,</span>
+  <span class="c-key">"valorTotal"</span><span class="c-punct">:</span> <span class="c-num">19.50</span><span class="c-punct">,</span>
+  <span class="c-key">"dataPedido"</span><span class="c-punct">:</span> <span class="c-str">"2026-07-22"</span>
+<span class="c-punct">}</span>
+
+<span class="c-comment">// Máquina de estados</span>
+<span class="c-method">PATCH</span> <span class="c-path">/api/v1/pedidos/42/confirmar</span>  <span class="c-comment">→ CONFIRMADO</span>
+<span class="c-method">PATCH</span> <span class="c-path">/api/v1/pedidos/42/faturar</span>    <span class="c-comment">→ FATURADO</span>
+<span class="c-method">PATCH</span> <span class="c-path">/api/v1/pedidos/42/cancelar</span>   <span class="c-comment">→ CANCELADO</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="bullets-row">
+    <div class="panel panel-legacy">
+      <div class="bullets">
+        <h4>Legado — Bugs e Lacunas</h4>
+        <ul>
+          <li><strong>Desconto hardcoded</strong> — sempre zero</li>
+          <li><strong>Estoque nunca atualizado</strong> ao criar pedido</li>
+          <li>INSERT de cabeçalho <strong>fora de transação</strong></li>
+          <li>Cancelar pedido já faturado <strong>sem validação</strong></li>
+          <li>Status CONFIRMADO/FATURADO <strong>sem operação real</strong></li>
+        </ul>
+      </div>
+    </div>
+    <div class="panel panel-modern">
+      <div class="bullets">
+        <h4>Moderno — Correções</h4>
+        <ul>
+          <li>Desconto operacional <strong>por item</strong></li>
+          <li>Estoque <strong>decrementado/restituído</strong> automaticamente</li>
+          <li><strong>@Transactional</strong> — operação 100% atômica</li>
+          <li>Máquina de estados: <strong>422 em transição inválida</strong></li>
+          <li>PATCH <strong>/confirmar</strong> e <strong>/faturar</strong> implementados</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ RELATÓRIO ══════════ -->
+<div class="content" id="tab-relatorio">
+  <div class="split">
+
+    <div class="panel panel-legacy">
+      <div class="panel-header">
+        <span class="panel-label">Legado — Terminal Informix-4GL</span>
+        <span class="panel-tag">RELATORIO.4GL</span>
+      </div>
+      <div class="panel-body">
+        <div class="terminal">
+          <div class="title-bar">| RELATORIO — PEDIDOS POR STATUS |</div>
+          <br>
+          <div>──────────────────────────────────────────────────</div>
+          <div style="color:#3fb950; font-weight:bold">Status          Qtde    Valor Total</div>
+          <div>──────────────────────────────────────────────────</div>
+          <div><span class="field-value">ABERTO     </span><span class="field-label">     3      R$     540.00</span></div>
+          <div><span class="field-value">CONFIRMADO </span><span class="field-label">     1      R$     200.00</span></div>
+          <div><span class="field-value">FATURADO   </span><span class="field-label">     5      R$   1.350.00</span></div>
+          <div><span class="field-value">CANCELADO  </span><span class="field-label">     2      R$     320.00</span></div>
+          <div>──────────────────────────────────────────────────</div>
+          <div style="color:#e6edf3; font-weight:bold">TOTAL              11      R$   2.410.00</div>
+          <br>
+          <div class="c-comment" style="color:#f85149">✗ visível só no terminal do servidor</div>
+          <div class="c-comment" style="color:#f85149">✗ não pode ser consumido por outro sistema</div>
+          <div class="c-comment" style="color:#f85149">✗ sem exportação ou integração</div>
+          <br>
+          <div class="prompt">Press ENTER to continue...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel panel-modern">
+      <div class="panel-header">
+        <span class="panel-label">Moderno — API REST</span>
+        <span class="panel-tag">GET /API/V1/RELATORIOS/PEDIDOS-POR-STATUS</span>
+      </div>
+      <div class="panel-body">
+        <div class="code-block">
+<span class="c-comment">// Mesma agregação — agora como JSON</span>
+<span class="c-method">GET</span> <span class="c-path">/api/v1/relatorios/pedidos-por-status</span>
+<span class="c-header">Authorization:</span> <span class="c-str">Bearer eyJ...</span>
+
+<span class="c-status">200 OK</span>
+<span class="c-punct">[</span>
+  <span class="c-punct">{</span>
+    <span class="c-key">"status"</span><span class="c-punct">:</span>     <span class="c-str">"ABERTO"</span><span class="c-punct">,</span>
+    <span class="c-key">"quantidade"</span><span class="c-punct">:</span> <span class="c-num">3</span><span class="c-punct">,</span>
+    <span class="c-key">"valorTotal"</span><span class="c-punct">:</span> <span class="c-num">540.00</span>
+  <span class="c-punct">},</span>
+  <span class="c-punct">{</span>
+    <span class="c-key">"status"</span><span class="c-punct">:</span>     <span class="c-str">"CONFIRMADO"</span><span class="c-punct">,</span>
+    <span class="c-key">"quantidade"</span><span class="c-punct">:</span> <span class="c-num">1</span><span class="c-punct">,</span>
+    <span class="c-key">"valorTotal"</span><span class="c-punct">:</span> <span class="c-num">200.00</span>
+  <span class="c-punct">},</span>
+  <span class="c-punct">{</span>
+    <span class="c-key">"status"</span><span class="c-punct">:</span>     <span class="c-str">"FATURADO"</span><span class="c-punct">,</span>
+    <span class="c-key">"quantidade"</span><span class="c-punct">:</span> <span class="c-num">5</span><span class="c-punct">,</span>
+    <span class="c-key">"valorTotal"</span><span class="c-punct">:</span> <span class="c-num">1350.00</span>
+  <span class="c-punct">}</span>
+<span class="c-punct">]</span>
+
+<span class="c-comment">// Porta relatorio_pedidos_status() — linhas 8-27</span>
+<span class="c-comment">// do relatorio.4gl via projeção JPQL + GROUP BY</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="bullets-row">
+    <div class="panel panel-legacy">
+      <div class="bullets">
+        <h4>Legado — Limitações</h4>
+        <ul>
+          <li>Exibido <strong>apenas no terminal</strong> do servidor</li>
+          <li><strong>Não integrável</strong> com nenhum outro sistema</li>
+          <li>Sem exportação CSV / Excel / PDF</li>
+          <li>Sem filtro por período ou cliente</li>
+        </ul>
+      </div>
+    </div>
+    <div class="panel panel-modern">
+      <div class="bullets">
+        <h4>Moderno — Possibilidades</h4>
+        <ul>
+          <li>JSON consumível por <strong>qualquer front-end</strong></li>
+          <li>Integrável com <strong>dashboards e BI</strong></li>
+          <li>Extensível: adicionar filtros sem quebrar contrato</li>
+          <li>Acessível via <strong>curl, Postman, Python...</strong></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ SEGURANÇA ══════════ -->
+<div class="content" id="tab-seguranca">
+  <div class="security-grid">
+    <div class="sec-card">
+      <h4>Legado — Informix-4GL</h4>
+      <div class="sec-item">
+        <div class="sec-label">Armazenamento de senha</div>
+        <div class="sec-value bad">Texto puro no banco</div>
+      </div>
+      <div class="sec-item">
+        <div class="sec-label">Autenticação</div>
+        <div class="sec-value bad">Nenhuma — acesso direto ao terminal</div>
+      </div>
+      <div class="sec-item">
+        <div class="sec-label">Controle de acesso</div>
+        <div class="sec-value bad">Nenhum por perfil</div>
+      </div>
+      <div class="sec-item">
+        <div class="sec-label">Exposição de API</div>
+        <div class="sec-value bad">Não existe</div>
+      </div>
+      <div class="sec-item">
+        <div class="sec-label">Política de senha</div>
+        <div class="sec-value bad">Nenhuma (qualquer string)</div>
+      </div>
+    </div>
+    <div class="sec-card">
+      <h4>Moderno — Spring Boot 3</h4>
+      <div class="sec-item">
+        <div class="sec-label">Armazenamento de senha</div>
+        <div class="sec-value good">BCrypt fator 10 — hash unidirecional</div>
+      </div>
+      <div class="sec-item">
+        <div class="sec-label">Autenticação</div>
+        <div class="sec-value good">JWT HMAC-SHA256 · validade 24h</div>
+      </div>
+      <div class="sec-item">
+        <div class="sec-label">Controle de acesso por perfil</div>
+        <div class="sec-value good">Spring Security · 3 perfis</div>
+        <div class="profile-row">
+          <span class="profile-chip chip-admin">ADMIN — acesso total</span>
+          <span class="profile-chip chip-op">OPERADOR — GET + escrita</span>
+          <span class="profile-chip chip-cons">CONSULTA — GET only</span>
+        </div>
+      </div>
+      <div class="sec-item">
+        <div class="sec-label">Endpoints públicos</div>
+        <div class="sec-value warn">Somente POST /auth/login · GET /actuator/health</div>
+      </div>
+      <div class="sec-item">
+        <div class="sec-label">Política de senha</div>
+        <div class="sec-value good">Mínimo 8 chars · validação Bean Validation</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ LACUNAS ══════════ -->
+<div class="content" id="tab-lacunas">
+  <table class="gap-table">
+    <tr>
+      <th>#</th>
+      <th>Problema no Legado</th>
+      <th>Solução no Moderno</th>
+    </tr>
+    <tr>
+      <td class="gap-num">1</td>
+      <td class="before">Senha armazenada em texto puro</td>
+      <td class="after">BCrypt (fator 10) em toda persistência</td>
+    </tr>
+    <tr>
+      <td class="gap-num">2</td>
+      <td class="before">INSERT de cabeçalho do pedido fora de transação</td>
+      <td class="after">@Transactional atômica — cabeçalho + itens juntos</td>
+    </tr>
+    <tr>
+      <td class="gap-num">3</td>
+      <td class="before">Cancelamento sem validar status atual</td>
+      <td class="after">Máquina de estados com enum StatusPedido · 422 em transição inválida</td>
+    </tr>
+    <tr>
+      <td class="gap-num">4</td>
+      <td class="before">Desconto hardcoded como 0 em todos os itens</td>
+      <td class="after">Campo desconto operacional no ItemPedidoRequestDTO</td>
+    </tr>
+    <tr>
+      <td class="gap-num">5</td>
+      <td class="before">Estoque nunca atualizado ao criar ou cancelar pedido</td>
+      <td class="after">Decremento automático na criação · restituição no cancelamento</td>
+    </tr>
+    <tr>
+      <td class="gap-num">6</td>
+      <td class="before">Status CONFIRMADO e FATURADO sem operação real no sistema</td>
+      <td class="after">PATCH /confirmar e PATCH /faturar implementados</td>
+    </tr>
+    <tr>
+      <td class="gap-num">7</td>
+      <td class="before">Desativação de usuário irreversível (sem reativação)</td>
+      <td class="after">PATCH /reativar adicionado</td>
+    </tr>
+    <tr>
+      <td class="gap-num">8</td>
+      <td class="before">Sem autenticação — acesso direto ao terminal do servidor</td>
+      <td class="after">JWT + Spring Security com 3 perfis de acesso</td>
+    </tr>
+    <tr>
+      <td class="gap-num">9</td>
+      <td class="before">Sem API — integração com outros sistemas impossível</td>
+      <td class="after">REST completo com RFC 7807 Problem Details</td>
+    </tr>
+  </table>
+</div>
+
+<footer>Made with IBM Bob</footer>
+
+<style>
+.tab.active { border-bottom-color: #f78166 !important; color: #e6edf3 !important; }
+</style>
+<script>
+document.querySelectorAll('.tab').forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+    document.querySelectorAll('.content').forEach(function(c){ c.classList.remove('active'); });
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
