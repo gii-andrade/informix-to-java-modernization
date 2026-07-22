@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>API Reference — Sistema de Pedidos</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #1f2328;
+    background: #f7f8fa;
+  }
+
+  /* ── Layout ─────────────────────────────────────────────── */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    width: 220px;
+    height: 100vh;
+    background: #ffffff;
+    border-right: 1px solid #e5e7eb;
+    overflow-y: auto;
+    padding: 20px 0;
+  }
+  .sidebar-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #57606a;
+    padding: 0 18px 10px;
+  }
+  .sidebar a {
+    display: block;
+    padding: 5px 18px;
+    font-size: 13px;
+    color: #1f2328;
+    text-decoration: none;
+    border-left: 3px solid transparent;
+  }
+  .sidebar a:hover  { background: #f7f8fa; }
+  .sidebar a.active { border-left-color: #3b82d4; color: #3b82d4; font-weight: 600; }
+  .sidebar .group   { margin-top: 14px; }
+  .sidebar .group-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: #57606a;
+    padding: 4px 18px 2px;
+  }
+
+  .main {
+    margin-left: 220px;
+    padding: 32px 40px 80px;
+    max-width: 900px;
+  }
+
+  /* ── Header ─────────────────────────────────────────────── */
+  .page-header { margin-bottom: 36px; border-bottom: 1px solid #e5e7eb; padding-bottom: 20px; }
+  .page-header h1 { font-size: 24px; font-weight: 700; }
+  .page-header p  { color: #57606a; margin-top: 4px; }
+  .base-url {
+    display: inline-block;
+    margin-top: 10px;
+    background: #f7f8fa;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-family: "SF Mono", "Cascadia Mono", monospace;
+    font-size: 13px;
+    color: #1f2328;
+  }
+
+  /* ── Section ─────────────────────────────────────────────── */
+  .section { margin-bottom: 48px; }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .section-header h2 { font-size: 18px; font-weight: 700; }
+  .section-desc { color: #57606a; font-size: 13px; margin-bottom: 16px; margin-top: -8px; }
+
+  /* ── Endpoint card ───────────────────────────────────────── */
+  .endpoint {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .endpoint-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .endpoint-header:hover { background: #f7f8fa; }
+  .method {
+    font-family: "SF Mono", "Cascadia Mono", monospace;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    min-width: 54px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .m-get    { background: #dbeafe; color: #1d4ed8; }
+  .m-post   { background: #dafbe1; color: #1a7f37; }
+  .m-put    { background: #fff8e1; color: #92400e; }
+  .m-patch  { background: #ede9fe; color: #6d28d9; }
+  .m-delete { background: #ffe4e6; color: #9f1239; }
+
+  .path {
+    font-family: "SF Mono", "Cascadia Mono", monospace;
+    font-size: 13px;
+    color: #1f2328;
+    flex: 1;
+  }
+  .endpoint-summary { font-size: 13px; color: #57606a; }
+
+  .endpoint-body {
+    border-top: 1px solid #e5e7eb;
+    padding: 14px 16px;
+    display: none;
+  }
+  .endpoint.open .endpoint-body { display: block; }
+  .endpoint.open .endpoint-header { background: #f7f8fa; }
+
+  /* ── Auth badge ──────────────────────────────────────────── */
+  .auth-badge {
+    font-size: 11px;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .auth-pub  { background: #dafbe1; color: #1a7f37; }
+  .auth-any  { background: #dbeafe; color: #1d4ed8; }
+  .auth-op   { background: #ede9fe; color: #6d28d9; }
+  .auth-adm  { background: #ffe4e6; color: #9f1239; }
+
+  /* ── Inner content ───────────────────────────────────────── */
+  .field-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 10px; }
+  .field-table th {
+    text-align: left;
+    background: #f7f8fa;
+    padding: 5px 9px;
+    border: 1px solid #e5e7eb;
+    font-weight: 600;
+    color: #57606a;
+  }
+  .field-table td {
+    padding: 5px 9px;
+    border: 1px solid #e5e7eb;
+    vertical-align: top;
+  }
+  .req { color: #cf222e; font-weight: 700; font-size: 11px; }
+  .opt { color: #57606a; font-size: 11px; }
+
+  pre {
+    background: #1f2328;
+    color: #e6edf3;
+    border-radius: 5px;
+    padding: 12px 14px;
+    font-size: 12px;
+    font-family: "SF Mono", "Cascadia Mono", monospace;
+    overflow-x: auto;
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+  .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #57606a; margin-top: 10px; margin-bottom: 4px; }
+  .note  { font-size: 12px; color: #57606a; background: #f7f8fa; border-left: 3px solid #e5e7eb; padding: 6px 10px; border-radius: 0 4px 4px 0; margin-top: 8px; }
+  .status-flow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    font-size: 12.5px;
+    margin-top: 6px;
+  }
+  .st { background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 4px; padding: 2px 10px; font-weight: 600; }
+  .arr { color: #57606a; }
+
+  /* ── Chevron ─────────────────────────────────────────────── */
+  .chevron { margin-left: auto; color: #57606a; font-size: 12px; transition: transform .15s; }
+  .endpoint.open .chevron { transform: rotate(90deg); }
+
+  footer {
+    text-align: center;
+    font-size: 12px;
+    color: #57606a;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 16px;
+    margin-top: 40px;
+    font-weight: 300;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Sidebar ── -->
+<nav class="sidebar">
+  <div class="sidebar-title">API Reference</div>
+  <div class="group">
+    <div class="group-label">Auth</div>
+    <a href="#auth">POST /auth/login</a>
+  </div>
+  <div class="group">
+    <div class="group-label">Clientes</div>
+    <a href="#clientes">Listagem &amp; Busca</a>
+    <a href="#clientes">Criar / Alterar / Excluir</a>
+  </div>
+  <div class="group">
+    <div class="group-label">Produtos</div>
+    <a href="#produtos">Listagem &amp; Busca</a>
+    <a href="#produtos">Criar / Alterar / Excluir</a>
+    <a href="#produtos">Preço &amp; Estoque</a>
+  </div>
+  <div class="group">
+    <div class="group-label">Pedidos</div>
+    <a href="#pedidos">Criar &amp; Listar</a>
+    <a href="#pedidos">Máquina de estados</a>
+    <a href="#pedidos">Itens</a>
+  </div>
+  <div class="group">
+    <div class="group-label">Usuários</div>
+    <a href="#usuarios">CRUD &amp; Perfis</a>
+    <a href="#usuarios">Ativar / Desativar</a>
+  </div>
+  <div class="group">
+    <div class="group-label">Relatório</div>
+    <a href="#relatorio">Pedidos por Status</a>
+  </div>
+</nav>
+
+<!-- ── Main ── -->
+<main class="main">
+
+  <!-- Header -->
+  <div class="page-header">
+    <h1>Sistema de Pedidos — API Reference</h1>
+    <p>Modernização Informix-4GL → Spring Boot 3 &nbsp;·&nbsp; Java 21 &nbsp;·&nbsp; JWT + BCrypt</p>
+    <div class="base-url">Base URL: http://localhost:8080/api/v1</div>
+  </div>
+
+  <!-- ═══════════════════ AUTH ═══════════════════ -->
+  <section class="section" id="auth">
+    <div class="section-header">
+      <h2>Auth</h2>
+    </div>
+    <p class="section-desc">Único endpoint público. Retorna um JWT Bearer a ser usado em todos os demais endpoints.</p>
+
+    <div class="endpoint open">
+      <div class="endpoint-header">
+        <span class="method m-post">POST</span>
+        <span class="path">/auth/login</span>
+        <span class="auth-badge auth-pub">público</span>
+        <span class="endpoint-summary">Autenticar e obter token JWT</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="label">Body (JSON)</div>
+        <table class="field-table">
+          <tr><th>Campo</th><th>Tipo</th><th></th><th>Descrição</th></tr>
+          <tr><td>login</td><td>string</td><td><span class="req">req</span></td><td>Login do usuário cadastrado</td></tr>
+          <tr><td>senha</td><td>string</td><td><span class="req">req</span></td><td>Senha (mín. 8 chars)</td></tr>
+        </table>
+        <div class="label">Exemplo</div>
+        <pre>curl -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"login":"admin","senha":"password"}'</pre>
+        <div class="label">Resposta 200</div>
+        <pre>{ "token": "eyJhbGci...", "perfil": "ADMIN", "expiresInMs": 86400000 }</pre>
+        <div class="note">Use o token em todas as chamadas seguintes: <code>Authorization: Bearer &lt;token&gt;</code></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ CLIENTES ═══════════════════ -->
+  <section class="section" id="clientes">
+    <div class="section-header"><h2>Clientes</h2></div>
+    <p class="section-desc">Porta <code>cliente.4gl</code>. GETs disponíveis para qualquer perfil autenticado. Escrita requer ADMIN ou OPERADOR.</p>
+
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="method m-get">GET</span>
+        <span class="path">/clientes</span>
+        <span class="auth-badge auth-any">autenticado</span>
+        <span class="endpoint-summary">Listar todos os clientes</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <pre>curl http://localhost:8080/api/v1/clientes \
+  -H "Authorization: Bearer $TOKEN"</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="method m-get">GET</span>
+        <span class="path">/clientes/{id}</span>
+        <span class="auth-badge auth-any">autenticado</span>
+        <span class="endpoint-summary">Buscar cliente por ID</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <pre>curl http://localhost:8080/api/v1/clientes/1 \
+  -H "Authorization: Bearer $TOKEN"</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="method m-post">POST</span>
+        <span class="path">/clientes</span>
+        <span class="auth-badge auth-op">OPERADOR+</span>
+        <span class="endpoint-summary">Criar cliente → 201 Created</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="label">Body</div>
+        <table class="field-table">
+          <tr><th>Campo</th><th>Tipo</th><th></th><th>Regra</th></tr>
+          <tr><td>razaoSocial</td><td>string</td><td><span class="req">req</span></td><td>máx 150 chars</td></tr>
+          <tr><td>nomeFantasia</td><td>string</td><td><span class="opt">opt</span></td><td>máx 150 chars</td></tr>
+          <tr><td>documento</td><td>string</td><td><span class="req">req</span></td><td>único, máx 20 chars</td></tr>
+          <tr><td>email</td><td>string</td><td><span class="opt">opt</span></td><td>formato e-mail, máx 120</td></tr>
+          <tr><td>telefone</td><td>string</td><td><span class="opt">opt</span></td><td>máx 30 chars</td></tr>
+          <tr><td>endereco</td><td>string</td><td><span class="opt">opt</span></td><td>máx 200 chars</td></tr>
+          <tr><td>cidade</td><td>string</td><td><span class="opt">opt</span></td><td>máx 80 chars</td></tr>
+          <tr><td>uf</td><td>string</td><td><span class="opt">opt</span></td><td>exatamente 2 chars</td></tr>
+          <tr><td>cep</td><td>string</td><td><span class="opt">opt</span></td><td>máx 10 chars</td></tr>
+          <tr><td>ativo</td><td>string</td><td><span class="opt">opt</span></td><td>"S" ou "N" (default "S")</td></tr>
+        </table>
+        <pre>curl -X POST http://localhost:8080/api/v1/clientes \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "razaoSocial": "Empresa Exemplo Ltda",
+    "documento":   "12.345.678/0001-90",
+    "email":       "contato@exemplo.com",
+    "cidade":      "São Paulo",
+    "uf":          "SP",
+    "ativo":       "S"
+  }'</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="method m-put">PUT</span>
+        <span class="path">/clientes/{id}</span>
+        <span class="auth-badge auth-op">OPERADOR+</span>
+        <span class="endpoint-summary">Atualizar cliente completo</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="note">Mesmos campos do POST. Substitui todos os dados do cliente.</div>
+        <pre>curl -X PUT http://localhost:8080/api/v1/clientes/1 \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "razaoSocial": "Novo Nome S.A.", "documento": "12.345.678/0001-90", "uf": "RJ", "ativo": "S" }'</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="method m-delete">DELETE</span>
+        <span class="path">/clientes/{id}</span>
+        <span class="auth-badge auth-op">OPERADOR+</span>
+        <span class="endpoint-summary">Excluir cliente → 204 / 409 se tiver pedidos</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <pre>curl -X DELETE http://localhost:8080/api/v1/clientes/1 \
+  -H "Authorization: Bearer $TOKEN"</pre>
+        <div class="note">Retorna 409 Conflict se o cliente possuir pedidos vinculados.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ PRODUTOS ═══════════════════ -->
+  <section class="section" id="produtos">
+    <div class="section-header"><h2>Produtos</h2></div>
+    <p class="section-desc">Porta <code>produto.4gl</code>. Inclui operações especializadas de preço e estoque ausentes no legado.</p>
+
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="method m-get">GET</span>
+        <span class="path">/produtos</span>
+        <span class="auth-badge auth-any">autenticado</span>
+        <span class="endpoint-summary">Listar todos os produtos</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <pre>curl http://localhost:8080/api/v1/produtos -H "Authorization: Bearer $TOKEN"</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="method m-post">POST</span>
+        <span class="path">/produtos</span>
+        <span class="auth-badge auth-op">OPERADOR+</span>
+        <span class="endpoint-summary">Criar produto → 201 Created</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <table class="field-table">
+          <tr><th>Campo</th><th>Tipo</th><th></th><th>Regra</th></tr>
+          <tr><td>codigo</td><td>string</td><td><span class="req">req</span></td><td>único, máx 30 chars</td></tr>
+          <tr><td>descricao</td><td>string</td><td><span class="req">req</span></td><td>máx 150 chars</td></tr>
+          <tr><td>unidadeMedida</td><td>string</td><td><span class="opt">opt</span></td><td>default "UN", máx 10</td></tr>
+          <tr><td>precoVenda</td><td>decimal</td><td><span class="req">req</span></td><td>≥ 0, até 2 decimais</td></tr>
+          <tr><td>estoqueAtual</td><td>decimal</td><td><span class="opt">opt</span></td><td>≥ 0, até 3 decimais</td></tr>
+          <tr><td>ativo</td><td>string</td><td><span class="opt">opt</span></td><td>"S" ou "N" (default "S")</td></tr>
+        </table>
+        <pre>curl -X POST http://localhost:8080/api/v1/produtos \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "codigo": "PROD-001", "descricao": "Caneta Esferográfica Azul",
+    "unidadeMedida": "UN", "precoVenda": 2.50, "estoqueAtual": 100.000, "ativo": "S"
+  }'</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="method m-patch">PATCH</span>
+        <span class="path">/produtos/{id}/preco?valor={valor}</span>
+        <span class="auth-badge auth-op">OPERADOR+</span>
+        <span class="endpoint-summary">Atualizar preço de venda</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <pre>curl -X PATCH "http://localhost:8080/api/v1/produtos/1/preco?valor=3.99" \
+  -H "Authorization: Bearer $TOKEN"</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="method m-patch">PATCH</span>
+        <span class="path">/produtos/{id}/estoque?valor={valor}</span>
+        <span class="auth-badge auth-op">OPERADOR+</span>
+        <span class="endpoint-summary">Ajustar estoque atual</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <pre>curl -X PATCH "http://localhost:8080/api/v1/produtos/1/estoque?valor=250.000" \
+  -H "Authorization: Bearer $TOKEN"</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="method m-delete">DELETE</span>
+        <span class="path">/produtos/{id}</span>
+        <span class="auth-badge auth-op">OPERADOR+</span>
+        <span class="endpoint-summary">Excluir produto → 204 / 409 se tiver itens de pedido</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <pre>curl -X DELETE http://localhost:8080/api/v1/produtos/1 -H "Authorization: Bearer $TOKEN"</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ PEDIDOS ═══════════════════ -->
+  <section class="section" id="pedidos">
+    <div class="section-header"><h2>Pedidos</h2></div>
+    <p class="section-desc">Porta <code>pedido.4gl</code>. Unifica cabeçalho + itens em uma única operação atômica. Implementa máquina de estados que não existia no legado.</p>
+
+    <div class="note" style="margin-bottom:14px;">
+      <strong>Máquina de estados:</strong>
+      <div class="status-flow">
+        <span class="st">ABERTO</span><span class="arr">──▶ /confirmar ──▶</span>
+        <span class="st">CONFIRMADO</span><span class="arr">──▶ /faturar ──▶</span>
+        <span class="st">FATURADO</span>
+        <span class="arr">&nbsp;|&nbsp; ABERTO ou CONFIRMADO ──▶ /cancelar ──▶</span>
+        <span class="st">CANCELADO</span>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="method m-post">POST</span>
+        <span class="path">/pedidos</span>
+        <span class="auth-badge auth-op">OPERADOR+</span>
+        <span class="endpoint-summary">Criar pedido com itens → 201 Created</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <table class="field-table">
+          <tr><th>Campo</th><th>Tipo</th><th></th><th>Descrição</th></tr>
+          <tr><td>clienteId</td><td>long</td><td><span class="req">req</span></td><td>ID do cliente</td></tr>
+          <tr><td>usuarioId</td><td>long</td><td><span class="req">req</span></td><td>ID do usuário responsável</td></tr>
+          <tr><td>observacao</td><td>string</td><td><span class="opt">opt</span></td><td>máx 500 chars</td></tr>
+          <tr><td>itens[].produtoId</td><td>long</td><td><span class="req">req</span></td><td>Produto ativo</td></tr>
+          <tr><td>itens[].quantidade</td><td>decimal</td><td><span class="req">req</span></td><td>&gt; 0, até 3 decimais</td></tr>
+          <tr><td>itens[].desconto</td><td>decimal</td><td><span class="opt">opt</span></td><td>≥ 0 (default 0)</td></tr>
+        </table>
+        <pre>curl -X POST http://localhost:8080/api/v1/pedidos \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "clienteId": 1, "usuarioId": 1,
+    "observacao": "Entrega urgente",
+    "itens": [
+      { "produtoId": 1, "quantidade": 10.000, "desconto": 0.00 },
+      { "produtoId": 2, "quantidade":  2.000, "desconto": 5.00 }
+    ]
+  }'</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="method m-get">GET</span>
+        <span class="path">/pedidos?status={status}</span>
+        <span class="auth-badge auth-any">autenticado</span>
+        <span class="endpoint-summary">Listar pedidos (todos ou filtrado por status)</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <pre># Todos os pedidos
+curl http://localhost:8080/api/v1/pedidos -H "Authorization: Bearer $TOKEN"
+
+# Filtrar por status: ABERTO | CONFIRMADO | FATURADO | CANCELADO
+curl "http://localhost:8080/api/v1/pedidos?status=ABERTO" -H "Authorization: Bearer $TOKEN"</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="method m-patch">PATCH</span>
+        <span class="path">/pedidos/{id}/confirmar</span>
+        <span class="auth-badge auth-op">OPERADOR+</span>
+        <span class="endpoint-summary">Confirmar pedido (ABERTO → CONFIRMADO)</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <pre>curl -X PATCH http://localhost:8080/api/v1/pedidos/1/confirmar \
+  -H "Authorization: Bearer $TOKEN"</pre>
+        <div class="note">Retorna 422 se o pedido não estiver no status ABERTO.</div>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="method m-patch">PATCH</span>
+        <span class="path">/pedidos/{id}/faturar</span>
+        <span class="auth-badge auth-op">OPERADOR+</span>
+        <span class="endpoint-summary">Faturar pedido (CONFIRMADO → FATURADO)</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <pre>curl -X PATCH http://localhost:8080/api/v1/pedidos/1/faturar \
+  -H "Authorization: Bearer $TOKEN"</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="method m-patch">PATCH</span>
+        <span class="path">/pedidos/{id}/cancelar</span>
+        <span class="auth-badge auth-op">OPERADOR+</span>
+        <span class="endpoint-summary">Cancelar pedido (ABERTO ou CONFIRMADO → CANCELADO)</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <pre>curl -X PATCH http://localhost:8080/api/v1/pedidos/1/cancelar \
+  -H "Authorization: Bearer $TOKEN"</pre>
+        <div class="note">O estoque dos itens é restituído automaticamente ao cancelar.</div>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="method m-post">POST</span>
+        <span class="path">/pedidos/{id}/itens</span>
+        <span class="auth-badge auth-op">OPERADOR+</span>
+        <span class="endpoint-summary">Adicionar item a pedido ABERTO</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <pre>curl -X POST http://localhost:8080/api/v1/pedidos/1/itens \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "produtoId": 3, "quantidade": 5.000, "desconto": 0.00 }'</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="method m-delete">DELETE</span>
+        <span class="path">/pedidos/{id}/itens/{produtoId}</span>
+        <span class="auth-badge auth-op">OPERADOR+</span>
+        <span class="endpoint-summary">Remover item de pedido ABERTO</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <pre>curl -X DELETE http://localhost:8080/api/v1/pedidos/1/itens/3 \
+  -H "Authorization: Bearer $TOKEN"</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ USUÁRIOS ═══════════════════ -->
+  <section class="section" id="usuarios">
+    <div class="section-header"><h2>Usuários</h2></div>
+    <p class="section-desc">Porta <code>usuario.4gl</code>. Todos os endpoints requerem perfil <strong>ADMIN</strong>. Perfis: ADMIN · OPERADOR · CONSULTA.</p>
+
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="method m-get">GET</span>
+        <span class="path">/usuarios?perfil={perfil}</span>
+        <span class="auth-badge auth-adm">ADMIN</span>
+        <span class="endpoint-summary">Listar usuários (todos ou por perfil)</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <pre># Todos
+curl http://localhost:8080/api/v1/usuarios -H "Authorization: Bearer $TOKEN"
+
+# Por perfil: ADMIN | OPERADOR | CONSULTA
+curl "http://localhost:8080/api/v1/usuarios?perfil=OPERADOR" -H "Authorization: Bearer $TOKEN"</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="method m-post">POST</span>
+        <span class="path">/usuarios</span>
+        <span class="auth-badge auth-adm">ADMIN</span>
+        <span class="endpoint-summary">Criar usuário → 201 Created</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <table class="field-table">
+          <tr><th>Campo</th><th>Tipo</th><th></th><th>Regra</th></tr>
+          <tr><td>login</td><td>string</td><td><span class="req">req</span></td><td>único · letras, números, . - _</td></tr>
+          <tr><td>nome</td><td>string</td><td><span class="req">req</span></td><td>máx 120 chars</td></tr>
+          <tr><td>senha</td><td>string</td><td><span class="req">req</span></td><td>mín 8 chars — convertida em BCrypt</td></tr>
+          <tr><td>perfil</td><td>enum</td><td><span class="opt">opt</span></td><td>ADMIN | OPERADOR | CONSULTA (default OPERADOR)</td></tr>
+        </table>
+        <pre>curl -X POST http://localhost:8080/api/v1/usuarios \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "login": "joao.silva", "nome": "João Silva", "senha": "senha1234", "perfil": "OPERADOR" }'</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="method m-patch">PATCH</span>
+        <span class="path">/usuarios/{id}/desativar</span>
+        <span class="auth-badge auth-adm">ADMIN</span>
+        <span class="endpoint-summary">Desativar usuário</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <pre>curl -X PATCH http://localhost:8080/api/v1/usuarios/2/desativar \
+  -H "Authorization: Bearer $TOKEN"</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="method m-patch">PATCH</span>
+        <span class="path">/usuarios/{id}/reativar</span>
+        <span class="auth-badge auth-adm">ADMIN</span>
+        <span class="endpoint-summary">Reativar usuário (lacuna corrigida — irreversível no legado)</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <pre>curl -X PATCH http://localhost:8080/api/v1/usuarios/2/reativar \
+  -H "Authorization: Bearer $TOKEN"</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="method m-patch">PATCH</span>
+        <span class="path">/usuarios/{id}/senha</span>
+        <span class="auth-badge auth-adm">ADMIN</span>
+        <span class="endpoint-summary">Alterar senha → 204 No Content</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <pre>curl -X PATCH http://localhost:8080/api/v1/usuarios/2/senha \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "senhaAtual": "senha1234", "senhaNova": "novaSenha99" }'</pre>
+        <div class="note">Exige confirmação da senha atual para evitar alteração não autorizada.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ RELATÓRIO ═══════════════════ -->
+  <section class="section" id="relatorio">
+    <div class="section-header"><h2>Relatório</h2></div>
+    <p class="section-desc">Porta <code>relatorio.4gl</code>. Mesma agregação que era exibida em janela de terminal, agora como JSON.</p>
+
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="method m-get">GET</span>
+        <span class="path">/relatorios/pedidos-por-status</span>
+        <span class="auth-badge auth-any">autenticado</span>
+        <span class="endpoint-summary">Pedidos agrupados por status com totais</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <pre>curl http://localhost:8080/api/v1/relatorios/pedidos-por-status \
+  -H "Authorization: Bearer $TOKEN"</pre>
+        <div class="label">Resposta</div>
+        <pre>[
+  { "status": "ABERTO",     "quantidade": 3, "valorTotal": 540.00 },
+  { "status": "CONFIRMADO", "quantidade": 1, "valorTotal": 200.00 },
+  { "status": "FATURADO",   "quantidade": 5, "valorTotal": 1350.00 }
+]</pre>
+        <div class="note">Porta <code>relatorio_pedidos_status()</code> do <code>relatorio.4gl</code> (linhas 8–27). Projeção JPQL com GROUP BY.</div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer style="margin-left:220px; padding: 16px 40px 32px;">Made with IBM Bob</footer>
+
+<style>
+  /* Accordion sem JS — usa :has ou toggle via class no click */
+</style>
+
+<script>
+  // Accordion simples — sem event handlers externos
+  document.querySelectorAll('.endpoint-header').forEach(function(header) {
+    header.addEventListener('click', function() {
+      var ep = header.closest('.endpoint');
+      ep.classList.toggle('open');
+    });
+  });
+  // Sidebar highlight
+  var links = document.querySelectorAll('.sidebar a');
+  document.addEventListener('scroll', function() {
+    var sections = document.querySelectorAll('section[id]');
+    var current = '';
+    sections.forEach(function(s) {
+      if (window.scrollY >= s.offsetTop - 80) current = s.id;
+    });
+    links.forEach(function(l) {
+      l.classList.toggle('active', l.getAttribute('href') === '#' + current);
+    });
+  });
+</script>
+
+</body>
+</html>

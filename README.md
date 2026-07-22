@@ -128,20 +128,164 @@ podman compose up --build
 
 Aguarde ~30 s até ambos os serviços ficarem `healthy`. A API sobe em `http://localhost:8080/api/v1`.
 
+### Referência completa da API
+
+Abra [`docs/api-reference.html`](docs/api-reference.html) no navegador para ver todos os endpoints com campos, exemplos curl e regras de autorização organizados por módulo.
+
 ### Autenticar e usar
 
 ```bash
-# 1. Login — obtém o token JWT
+# ── 1. LOGIN — obtém o token JWT ─────────────────────────────────────────────
 curl -X POST http://localhost:8080/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"login":"admin","senha":"admin123"}'
+  -d '{"login":"admin","senha":"password"}'
 
 # Resposta: { "token": "eyJ...", "perfil": "ADMIN", "expiresInMs": 86400000 }
 
-# 2. Usar o token
-TOKEN="eyJ..."
-curl http://localhost:8080/api/v1/clientes \
+TOKEN="eyJ..."   # cole aqui o token recebido
+BASE="http://localhost:8080/api/v1"
+AUTH='-H "Authorization: Bearer '$TOKEN'"'
+
+# ── 2. CLIENTES ───────────────────────────────────────────────────────────────
+# Listar todos
+curl "$BASE/clientes" -H "Authorization: Bearer $TOKEN"
+
+# Criar cliente
+curl -X POST "$BASE/clientes" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "razaoSocial": "Empresa Exemplo Ltda",
+    "documento":   "12.345.678/0001-90",
+    "email":       "contato@exemplo.com",
+    "telefone":    "(11) 99999-0000",
+    "cidade":      "São Paulo",
+    "uf":          "SP",
+    "ativo":       "S"
+  }'
+
+# Buscar por ID
+curl "$BASE/clientes/1" -H "Authorization: Bearer $TOKEN"
+
+# Atualizar (PUT completo)
+curl -X PUT "$BASE/clientes/1" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "razaoSocial": "Empresa Exemplo S.A.",
+    "documento":   "12.345.678/0001-90",
+    "email":       "novo@exemplo.com",
+    "uf":          "SP",
+    "ativo":       "S"
+  }'
+
+# ── 3. PRODUTOS ───────────────────────────────────────────────────────────────
+# Listar todos
+curl "$BASE/produtos" -H "Authorization: Bearer $TOKEN"
+
+# Criar produto
+curl -X POST "$BASE/produtos" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "codigo":        "PROD-001",
+    "descricao":     "Caneta Esferográfica Azul",
+    "unidadeMedida": "UN",
+    "precoVenda":    2.50,
+    "estoqueAtual":  100.000,
+    "ativo":         "S"
+  }'
+
+# Atualizar preço
+curl -X PATCH "$BASE/produtos/1/preco?valor=3.00" \
   -H "Authorization: Bearer $TOKEN"
+
+# Ajustar estoque
+curl -X PATCH "$BASE/produtos/1/estoque?valor=150.000" \
+  -H "Authorization: Bearer $TOKEN"
+
+# ── 4. PEDIDOS ────────────────────────────────────────────────────────────────
+# Criar pedido com itens (clienteId e usuarioId precisam existir no banco)
+curl -X POST "$BASE/pedidos" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "clienteId":  1,
+    "usuarioId":  1,
+    "observacao": "Entrega urgente",
+    "itens": [
+      { "produtoId": 1, "quantidade": 10.000, "desconto": 0.00 },
+      { "produtoId": 2, "quantidade":  2.000, "desconto": 5.00 }
+    ]
+  }'
+
+# Listar todos os pedidos
+curl "$BASE/pedidos" -H "Authorization: Bearer $TOKEN"
+
+# Filtrar por status
+curl "$BASE/pedidos?status=ABERTO" -H "Authorization: Bearer $TOKEN"
+
+# Buscar pedido por ID
+curl "$BASE/pedidos/1" -H "Authorization: Bearer $TOKEN"
+
+# Confirmar pedido (ABERTO → CONFIRMADO)
+curl -X PATCH "$BASE/pedidos/1/confirmar" -H "Authorization: Bearer $TOKEN"
+
+# Faturar pedido (CONFIRMADO → FATURADO)
+curl -X PATCH "$BASE/pedidos/1/faturar" -H "Authorization: Bearer $TOKEN"
+
+# Cancelar pedido (ABERTO ou CONFIRMADO → CANCELADO)
+curl -X PATCH "$BASE/pedidos/1/cancelar" -H "Authorization: Bearer $TOKEN"
+
+# Adicionar item a pedido ABERTO
+curl -X POST "$BASE/pedidos/1/itens" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "produtoId": 3, "quantidade": 5.000, "desconto": 0.00 }'
+
+# Remover item de pedido ABERTO
+curl -X DELETE "$BASE/pedidos/1/itens/3" -H "Authorization: Bearer $TOKEN"
+
+# ── 5. USUÁRIOS (requer perfil ADMIN) ─────────────────────────────────────────
+# Listar todos
+curl "$BASE/usuarios" -H "Authorization: Bearer $TOKEN"
+
+# Filtrar por perfil
+curl "$BASE/usuarios?perfil=OPERADOR" -H "Authorization: Bearer $TOKEN"
+
+# Criar usuário
+curl -X POST "$BASE/usuarios" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "login":  "joao.silva",
+    "nome":   "João Silva",
+    "senha":  "senha1234",
+    "perfil": "OPERADOR"
+  }'
+
+# Desativar usuário
+curl -X PATCH "$BASE/usuarios/2/desativar" -H "Authorization: Bearer $TOKEN"
+
+# Reativar usuário (lacuna corrigida — irreversível no legado)
+curl -X PATCH "$BASE/usuarios/2/reativar" -H "Authorization: Bearer $TOKEN"
+
+# Alterar senha (confirmar senha atual obrigatório)
+curl -X PATCH "$BASE/usuarios/2/senha" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "senhaAtual": "senha1234", "senhaNova": "novaSenha99" }'
+
+# ── 6. RELATÓRIO ──────────────────────────────────────────────────────────────
+# Pedidos agrupados por status (porta relatorio_pedidos_status() do legado)
+curl "$BASE/relatorios/pedidos-por-status" -H "Authorization: Bearer $TOKEN"
+
+# Resposta exemplo:
+# [
+#   { "status": "ABERTO",     "quantidade": 3, "valorTotal": 540.00 },
+#   { "status": "CONFIRMADO", "quantidade": 1, "valorTotal": 200.00 },
+#   { "status": "FATURADO",   "quantidade": 5, "valorTotal": 1350.00 }
+# ]
 ```
 
 ### Testes
