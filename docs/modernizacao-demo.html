@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modernização Informix → Java Spring Boot</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f8fa;
+    --border: #e5e7eb;
+    --text: #1f2328;
+    --muted: #57606a;
+    --accent: #3b82d4;
+    --secondary: #7c5cd8;
+    --danger: #c0392b;
+    --success: #27ae60;
+    --warning: #e67e22;
+  }
+
+  html { scroll-behavior: smooth; }
+  body { font-family: -apple-system,"Segoe UI",system-ui,sans-serif; font-size:15px; line-height:1.6; color:var(--text); background:var(--bg); }
+
+  /* NAV */
+  nav { position:sticky; top:0; z-index:100; background:var(--text); border-bottom:2px solid var(--accent); padding:0 24px; }
+  .nav-inner { max-width:960px; margin:0 auto; display:flex; align-items:center; gap:4px; overflow-x:auto; scrollbar-width:none; }
+  .nav-inner::-webkit-scrollbar { display:none; }
+  nav a { color:#c9d1d9; text-decoration:none; font-size:12px; padding:12px 10px; white-space:nowrap; border-bottom:2px solid transparent; transition:color .2s,border-color .2s; }
+  nav a:hover { color:#fff; border-bottom-color:var(--accent); }
+
+  /* SECTIONS */
+  section { padding:64px 24px; }
+  section:nth-child(even) { background:var(--surface); }
+  .container { max-width:960px; margin:0 auto; }
+  h1,h2,h3,h4 { line-height:1.3; font-weight:700; }
+  h2 { font-size:1.75rem; margin-bottom:8px; }
+  .section-label { font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--accent); margin-bottom:6px; }
+  .section-desc { color:var(--muted); max-width:620px; margin-bottom:36px; }
+
+  /* HERO */
+  #hero { background:var(--text); color:#fff; padding:80px 24px; text-align:center; }
+  #hero .kicker { display:inline-block; background:var(--accent); color:#fff; font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; padding:4px 14px; border-radius:20px; margin-bottom:20px; }
+  #hero h1 { font-size:clamp(1.6rem,4vw,2.6rem); max-width:760px; margin:0 auto 14px; }
+  #hero .subtitle { color:#8b949e; font-size:1.05rem; margin-bottom:48px; }
+  .transform-row { display:flex; align-items:center; justify-content:center; gap:24px; flex-wrap:wrap; margin-top:16px; }
+  .transform-box { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:24px 32px; min-width:200px; text-align:center; }
+  .transform-box .icon { font-size:2.4rem; margin-bottom:10px; }
+  .transform-box .label { font-size:13px; color:#8b949e; margin-bottom:4px; }
+  .transform-box .name { font-size:1.15rem; font-weight:700; }
+  .transform-box.legacy .name { color:#f08080; }
+  .transform-box.modern .name { color:#90ee90; }
+  .arrow-hero { font-size:2rem; color:var(--accent); display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .arrow-hero small { font-size:10px; color:#8b949e; letter-spacing:.05em; }
+  .bob-badge { display:inline-flex; align-items:center; gap:8px; background:rgba(124,92,216,.25); border:1px solid rgba(124,92,216,.4); border-radius:24px; padding:6px 18px; font-size:13px; color:#c9b8f5; margin-top:32px; }
+
+  /* CARDS */
+  .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:20px; }
+  .card { background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:22px; }
+  .card-icon { width:36px; height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:18px; margin-bottom:14px; }
+  .card h4 { font-size:.95rem; margin-bottom:6px; }
+  .card p { font-size:.85rem; color:var(--muted); }
+
+  /* LEGACY ARCH */
+  .monolith-diagram { border:2px solid #c0392b; border-radius:12px; padding:28px; background:#fff5f5; max-width:680px; }
+  .monolith-title { display:inline-block; background:#c0392b; color:#fff; font-size:12px; font-weight:700; padding:3px 12px; border-radius:4px; margin-bottom:20px; }
+  .monolith-blocks { display:flex; flex-direction:column; gap:10px; }
+  .mono-block { background:#fff; border:1px solid #f5c6c6; border-radius:6px; padding:12px 16px; display:flex; align-items:center; gap:10px; font-size:13px; }
+  .mono-block .dot { width:10px; height:10px; border-radius:50%; background:#c0392b; flex-shrink:0; }
+  .mono-block .dot.db { background:#8b4513; }
+  .monolith-connector { text-align:center; font-size:18px; color:#c0392b; margin:2px 0; }
+  .pain-list { list-style:none; margin-top:20px; }
+  .pain-list li { display:flex; align-items:flex-start; gap:10px; padding:9px 0; border-bottom:1px solid var(--border); font-size:.88rem; color:var(--muted); }
+  .pain-list li:last-child { border-bottom:none; }
+  .pain-list .x { color:#c0392b; font-weight:700; flex-shrink:0; }
+
+  /* PROCESS FLOW */
+  .process-flow { display:flex; flex-direction:column; gap:0; max-width:700px; }
+  .process-step { display:flex; gap:20px; align-items:flex-start; }
+  .step-left { display:flex; flex-direction:column; align-items:center; flex-shrink:0; }
+  .step-num { width:40px; height:40px; border-radius:50%; background:var(--accent); color:#fff; font-weight:700; font-size:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .step-num.bob { background:var(--secondary); }
+  .step-line { width:2px; flex:1; min-height:32px; background:var(--border); margin:4px 0; }
+  .step-content { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:16px 20px; margin-bottom:12px; flex:1; }
+  .step-content h4 { font-size:.95rem; margin-bottom:4px; }
+  .step-content p { font-size:.84rem; color:var(--muted); }
+  .step-content.bob-step { border-color:var(--secondary); background:#faf5ff; }
+  .bob-tag { display:inline-block; background:var(--secondary); color:#fff; font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px; margin-bottom:6px; }
+
+  /* ARCH DIAGRAM */
+  .arch-diagram { display:flex; flex-direction:column; align-items:center; gap:0; max-width:560px; }
+  .arch-layer { width:100%; border-radius:8px; padding:14px 20px; text-align:center; font-weight:600; font-size:.9rem; border:2px solid transparent; }
+  .arch-layer .layer-sub { font-size:.75rem; font-weight:400; color:inherit; opacity:.75; }
+  .arch-arrow-down { font-size:20px; color:var(--muted); padding:4px 0; }
+  .layer-user { background:#e8f4fd; border-color:#3b82d4; color:#1a4f8a; }
+  .layer-controller { background:#e8f4ed; border-color:#27ae60; color:#1a6b3c; }
+  .layer-service { background:#fef9e7; border-color:#e67e22; color:#9c5a00; }
+  .layer-repo { background:#fdf2f8; border-color:#9b59b6; color:#6c3483; }
+  .layer-db { background:#eaf0fb; border-color:#2980b9; color:#1a4f8a; }
+  .arch-extras { display:flex; gap:12px; flex-wrap:wrap; margin-top:24px; justify-content:center; }
+  .arch-extra-chip { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:5px 14px; font-size:12px; color:var(--muted); font-weight:600; }
+
+  /* COMPARE */
+  .compare-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+  @media (max-width:600px) { .compare-grid { grid-template-columns:1fr; } }
+  .compare-col { border-radius:10px; overflow:hidden; }
+  .compare-head { padding:16px 20px; font-weight:700; font-size:1rem; display:flex; align-items:center; gap:10px; }
+  .compare-head.before { background:#c0392b; color:#fff; }
+  .compare-head.after { background:#27ae60; color:#fff; }
+  .compare-body { border:1px solid var(--border); border-top:none; border-radius:0 0 10px 10px; }
+  .compare-item { display:flex; gap:12px; padding:12px 20px; border-bottom:1px solid var(--border); font-size:.88rem; align-items:flex-start; }
+  .compare-item:last-child { border-bottom:none; }
+  .compare-item .ci-icon { flex-shrink:0; font-size:15px; margin-top:1px; }
+
+  /* MODULE */
+  .module-grid { display:grid; grid-template-columns:1fr 1fr; gap:28px; }
+  @media (max-width:640px) { .module-grid { grid-template-columns:1fr; } }
+  .module-box { border-radius:10px; overflow:hidden; border:1px solid var(--border); }
+  .module-head { padding:14px 20px; font-weight:700; font-size:.9rem; display:flex; align-items:center; gap:8px; }
+  .module-head.legacy { background:#fff5f5; border-bottom:2px solid #c0392b; color:#c0392b; }
+  .module-head.modern { background:#f0faf4; border-bottom:2px solid #27ae60; color:#27ae60; }
+  .module-list { list-style:none; padding:16px 20px; display:flex; flex-direction:column; gap:8px; }
+  .module-list li { display:flex; align-items:center; gap:10px; font-size:.85rem; color:var(--text); }
+  .module-list li .pill { display:inline-block; font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px; white-space:nowrap; }
+  .pill-entity { background:#e8f4ed; color:#1a6b3c; }
+  .pill-dto    { background:#e8f4fd; color:#1a4f8a; }
+  .pill-ctrl   { background:#fef9e7; color:#9c5a00; }
+  .pill-svc    { background:#fdf2f8; color:#6c3483; }
+  .pill-repo   { background:#eaf0fb; color:#1a4f8a; }
+  .pill-exc    { background:#fff5f5; color:#c0392b; }
+  .rules-box { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:20px 24px; margin-top:28px; }
+  .rules-box h4 { margin-bottom:14px; font-size:.95rem; }
+  .rule-item { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); font-size:.86rem; }
+  .rule-item:last-child { border-bottom:none; }
+  .rule-check { color:var(--success); font-weight:700; }
+
+  /* BENEFITS */
+  .benefit-card { background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:22px; border-top:3px solid var(--accent); }
+  .benefit-card:nth-child(2) { border-top-color:var(--success); }
+  .benefit-card:nth-child(3) { border-top-color:var(--warning); }
+  .benefit-card:nth-child(4) { border-top-color:var(--secondary); }
+  .benefit-card:nth-child(5) { border-top-color:#c0392b; }
+  .benefit-card:nth-child(6) { border-top-color:#2980b9; }
+  .benefit-num { font-size:2rem; font-weight:800; color:var(--accent); line-height:1; margin-bottom:8px; }
+  .benefit-card:nth-child(2) .benefit-num { color:var(--success); }
+  .benefit-card:nth-child(3) .benefit-num { color:var(--warning); }
+  .benefit-card:nth-child(4) .benefit-num { color:var(--secondary); }
+  .benefit-card:nth-child(5) .benefit-num { color:#c0392b; }
+  .benefit-card:nth-child(6) .benefit-num { color:#2980b9; }
+
+  /* TAG */
+  .tag { display:inline-block; font-size:11px; font-weight:600; padding:2px 10px; border-radius:10px; margin-left:8px; vertical-align:middle; }
+  .tag-legacy { background:#fff5f5; color:#c0392b; border:1px solid #f5c6c6; }
+  .tag-modern { background:#f0faf4; color:#27ae60; border:1px solid #b3e8c6; }
+
+  /* DADOS ESTRUTURA */
+  #dados-estrutura { background:#f7f8fa; }
+  .dados-grid { display:grid; grid-template-columns:1fr 1fr; gap:28px; align-items:start; }
+  @media (max-width:720px) { .dados-grid { grid-template-columns:1fr; } }
+
+  .terminal-window { border-radius:10px; overflow:hidden; border:1px solid #333; box-shadow:0 4px 18px rgba(0,0,0,.18); }
+  .terminal-titlebar { background:#2d2d2d; padding:9px 14px; display:flex; align-items:center; gap:8px; }
+  .terminal-titlebar .dots { display:flex; gap:6px; }
+  .terminal-titlebar .dot-btn { width:12px; height:12px; border-radius:50%; }
+  .dot-red    { background:#ff5f57; }
+  .dot-yellow { background:#febc2e; }
+  .dot-green  { background:#28c840; }
+  .terminal-titlebar .title { color:#8b949e; font-size:11px; margin-left:10px; font-family:monospace; }
+  .terminal-body { background:#0d1117; padding:18px 20px; font-family:"Courier New",Courier,monospace; font-size:12px; color:#33ff33; min-height:340px; line-height:1.7; }
+  .terminal-body .t-prompt  { color:#57a0d8; }
+  .terminal-body .t-cmd     { color:#c9d1d9; }
+  .terminal-body .t-comment { color:#57606a; font-style:italic; }
+  .terminal-body .t-header  { color:#febc2e; font-weight:bold; }
+  .terminal-body .t-divider { color:#444; }
+  .terminal-body .t-row     { color:#c9d1d9; }
+  .terminal-body .t-row span.highlight { color:#33ff33; }
+  .terminal-body .t-info    { color:#87ceeb; }
+  .terminal-body .t-warn    { color:#febc2e; }
+  .legacy-tags { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  .legacy-tag  { background:#fff5f5; border:1px solid #f5c6c6; color:#c0392b; font-size:11px; font-weight:600; padding:3px 10px; border-radius:10px; }
+
+  .modern-window { border-radius:10px; overflow:hidden; border:1px solid var(--border); box-shadow:0 4px 18px rgba(0,0,0,.07); }
+  .modern-titlebar { background:#f0faf4; border-bottom:2px solid #27ae60; padding:10px 16px; display:flex; align-items:center; gap:10px; }
+  .modern-titlebar .m-dot   { width:10px; height:10px; border-radius:50%; background:#27ae60; }
+  .modern-titlebar .m-title { font-size:12px; font-weight:700; color:#1a6b3c; font-family:monospace; }
+  .modern-body { background:#fff; padding:18px 20px; font-size:12px; min-height:340px; }
+
+  .code-block { background:#0d1117; border-radius:8px; padding:14px 16px; font-family:"Courier New",monospace; font-size:11.5px; line-height:1.7; margin-bottom:14px; overflow-x:auto; }
+  .c-annotation { color:#ff9500; }
+  .c-keyword    { color:#ff79c6; }
+  .c-type       { color:#87ceeb; }
+  .c-name       { color:#90ee90; }
+  .c-punct      { color:#c9d1d9; }
+  .c-comment    { color:#57606a; font-style:italic; }
+
+  .mini-layers { display:flex; flex-direction:column; align-items:flex-start; gap:0; margin-bottom:14px; }
+  .mini-layer  { display:flex; align-items:center; gap:10px; }
+  .mini-layer-box { border-radius:6px; padding:6px 16px; font-size:11px; font-weight:700; border:1.5px solid transparent; white-space:nowrap; }
+  .ml-ctrl { background:#e8f4ed; border-color:#27ae60; color:#1a6b3c; }
+  .ml-svc  { background:#fef9e7; border-color:#e67e22; color:#9c5a00; }
+  .ml-repo { background:#fdf2f8; border-color:#9b59b6; color:#6c3483; }
+  .ml-db   { background:#eaf0fb; border-color:#2980b9; color:#1a4f8a; }
+
+  .mini-table-wrap  { margin-bottom:12px; }
+  .mini-table-label { font-size:11px; font-weight:700; color:var(--muted); margin-bottom:4px; text-transform:uppercase; letter-spacing:.06em; }
+  .mini-table { width:100%; border-collapse:collapse; font-size:11px; font-family:monospace; }
+  .mini-table th { background:#e8f4ed; color:#1a6b3c; padding:5px 8px; text-align:left; border:1px solid #b3e8c6; font-weight:700; }
+  .mini-table td { background:#fff; padding:5px 8px; border:1px solid var(--border); color:var(--text); }
+  .modern-tags { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  .modern-tag  { background:#f0faf4; border:1px solid #b3e8c6; color:#1a6b3c; font-size:11px; font-weight:600; padding:3px 10px; border-radius:10px; }
+
+  .transform-pipeline { display:flex; flex-direction:column; align-items:center; gap:0; margin:40px auto 8px; max-width:460px; }
+  .pipe-node { width:100%; border-radius:10px; padding:14px 20px; text-align:center; font-weight:700; font-size:.92rem; }
+  .pipe-node.legacy-node { background:#0d1117; color:#33ff33; font-family:monospace; border:1px solid #333; letter-spacing:.04em; }
+  .pipe-node.bob-node    { background:#faf5ff; color:var(--secondary); border:2px solid var(--secondary); }
+  .pipe-node.modern-node { background:#f0faf4; color:#1a6b3c; border:2px solid #27ae60; }
+  .pipe-arrow { display:flex; flex-direction:column; align-items:center; padding:2px 0; gap:2px; }
+  .pipe-arrow .pa-line  { width:2px; height:18px; background:var(--border); }
+  .pipe-arrow .pa-head  { font-size:16px; color:var(--muted); line-height:1; }
+  .pipe-arrow .pa-label { font-size:10px; color:var(--muted); letter-spacing:.05em; text-transform:uppercase; background:var(--surface); padding:1px 8px; border-radius:10px; border:1px solid var(--border); }
+
+  .bob-legend { background:#faf5ff; border:1.5px solid var(--secondary); border-radius:12px; padding:20px 24px; margin-top:28px; display:flex; gap:18px; align-items:flex-start; flex-wrap:wrap; }
+  .bob-legend-icon { width:44px; height:44px; border-radius:10px; background:var(--secondary); color:#fff; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+  .bob-legend-text h4 { font-size:.93rem; color:var(--secondary); margin-bottom:4px; }
+  .bob-legend-text p  { font-size:.84rem; color:var(--muted); }
+
+  /* CONCLUSION */
+  #conclusao { background:var(--text); color:#fff; text-align:center; padding:80px 24px; }
+  #conclusao h2 { color:#fff; margin-bottom:20px; }
+  #conclusao p  { color:#8b949e; max-width:680px; margin:0 auto 32px; font-size:1.05rem; line-height:1.8; }
+  .conclusion-chips { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin-top:28px; }
+  .conclusion-chip  { background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.14); border-radius:20px; padding:6px 16px; font-size:13px; color:#c9d1d9; }
+
+  footer { text-align:center; padding:20px 24px; font-size:12px; color:var(--muted); border-top:1px solid var(--border); }
+
+  @media (max-width:640px) {
+    .transform-row { flex-direction:column; }
+    .cards { grid-template-columns:1fr; }
+    .compare-grid { grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="#hero">Início</a>
+    <a href="#antes">Antes</a>
+    <a href="#processo">Processo</a>
+    <a href="#arquitetura">Arquitetura</a>
+    <a href="#comparacao">Comparação</a>
+    <a href="#dados-estrutura">Estrutura de Dados</a>
+    <a href="#modulo">Módulo</a>
+    <a href="#beneficios">Benefícios</a>
+    <a href="#conclusao">Conclusão</a>
+  </div>
+</nav>
+
+<!-- 1. HERO -->
+<section id="hero">
+  <div class="container">
+    <div class="kicker">IBM BOB · Modernização de Sistemas</div>
+    <h1>Modernização de Sistema Legado Informix para Java Spring Boot</h1>
+    <p class="subtitle">Modernização acelerada utilizando IBM BOB</p>
+    <div class="transform-row">
+      <div class="transform-box legacy">
+        <div class="icon">🗄️</div>
+        <div class="label">Sistema Legado</div>
+        <div class="name">Informix</div>
+      </div>
+      <div class="arrow-hero"><span>→</span><small>IBM BOB</small></div>
+      <div class="transform-box modern">
+        <div class="icon">☕</div>
+        <div class="label">Plataforma Moderna</div>
+        <div class="name">Java Spring Boot</div>
+      </div>
+    </div>
+    <div><span class="bob-badge"><span>✦</span> IBM BOB como acelerador da modernização</span></div>
+  </div>
+</section>
+
+<!-- 2. ANTES -->
+<section id="antes">
+  <div class="container">
+    <div class="section-label">Seção 2</div>
+    <h2>Cenário Antes da Modernização <span class="tag tag-legacy">Informix Legacy</span></h2>
+    <p class="section-desc">Arquitetura monolítica com código fortemente acoplado, regras de negócio dispersas e alta dificuldade de manutenção.</p>
+    <div style="display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start;">
+      <div>
+        <div class="monolith-diagram">
+          <div class="monolith-title">SISTEMA MONOLÍTICO</div>
+          <div class="monolith-blocks">
+            <div class="mono-block"><div class="dot"></div><strong>Interface de Usuário (Terminal/Form)</strong></div>
+            <div class="monolith-connector">⬇</div>
+            <div class="mono-block"><div class="dot"></div><strong>Lógica de Apresentação</strong><span style="color:#c0392b;font-size:11px;margin-left:8px;">acoplada à UI</span></div>
+            <div class="monolith-connector">⬇</div>
+            <div class="mono-block"><div class="dot"></div><strong>Regras de Negócio</strong><span style="color:#c0392b;font-size:11px;margin-left:8px;">misturadas ao código</span></div>
+            <div class="monolith-connector">⬇</div>
+            <div class="mono-block"><div class="dot"></div><strong>Acesso a Dados (4GL / SPL)</strong></div>
+            <div class="monolith-connector">⬇</div>
+            <div class="mono-block"><div class="dot db"></div><strong>Banco de Dados Informix</strong><span style="color:#8b4513;font-size:11px;margin-left:8px;">stored procedures + triggers</span></div>
+          </div>
+        </div>
+      </div>
+      <div style="flex:1;min-width:240px;">
+        <h3 style="margin-bottom:14px;font-size:1rem;">Problemas Identificados</h3>
+        <ul class="pain-list">
+          <li><span class="x">✗</span> Código fortemente acoplado entre camadas</li>
+          <li><span class="x">✗</span> Regras de negócio concentradas no banco (stored procedures)</li>
+          <li><span class="x">✗</span> Difícil de testar e validar isoladamente</li>
+          <li><span class="x">✗</span> Sem separação de responsabilidades</li>
+          <li><span class="x">✗</span> Integrações externas complexas e frágeis</li>
+          <li><span class="x">✗</span> Baixa legibilidade e documentação escassa</li>
+          <li><span class="x">✗</span> Dependência de ambiente proprietário</li>
+          <li><span class="x">✗</span> Ausência de testes automatizados</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3. PROCESSO COM IBM BOB -->
+<section id="processo">
+  <div class="container">
+    <div class="section-label">Seção 3</div>
+    <h2>Processo de Modernização com IBM BOB</h2>
+    <p class="section-desc">O IBM BOB atua como acelerador, automatizando a análise, extração de regras e geração da nova arquitetura Java.</p>
+    <div class="process-flow">
+      <div class="process-step">
+        <div class="step-left"><div class="step-num">1</div><div class="step-line"></div></div>
+        <div class="step-content"><h4>Análise do Sistema Legado</h4><p>Mapeamento completo dos módulos, tabelas, stored procedures, triggers e fluxos existentes no Informix.</p></div>
+      </div>
+      <div class="process-step">
+        <div class="step-left"><div class="step-num">2</div><div class="step-line"></div></div>
+        <div class="step-content"><h4>Identificação das Regras de Negócio</h4><p>Extração e documentação das regras de negócio dispersas entre código da aplicação, banco e stored procedures.</p></div>
+      </div>
+      <div class="process-step">
+        <div class="step-left"><div class="step-num bob">✦</div><div class="step-line"></div></div>
+        <div class="step-content bob-step"><div class="bob-tag">IBM BOB</div><h4>Modernização do Código com IBM BOB</h4><p>O IBM BOB processou o código legado, sugeriu refatorações, gerou estruturas modernas e acelerou a conversão para Java Spring Boot — preservando a lógica de negócio.</p></div>
+      </div>
+      <div class="process-step">
+        <div class="step-left"><div class="step-num">3</div><div class="step-line"></div></div>
+        <div class="step-content"><h4>Geração da Arquitetura Java</h4><p>Criação da estrutura base: entidades, repositórios, serviços, controllers e configurações Spring Boot.</p></div>
+      </div>
+      <div class="process-step">
+        <div class="step-left"><div class="step-num">4</div><div class="step-line"></div></div>
+        <div class="step-content"><h4>Criação das Camadas da Aplicação</h4><p>Implementação das camadas Entity, DTO, Service, Repository, Controller com separação clara de responsabilidades.</p></div>
+      </div>
+      <div class="process-step">
+        <div class="step-left"><div class="step-num">5</div></div>
+        <div class="step-content"><h4>Validação e Testes Automatizados</h4><p>Criação de testes unitários e de integração para garantir que todas as regras de negócio foram corretamente preservadas.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. ARQUITETURA NOVA -->
+<section id="arquitetura">
+  <div class="container">
+    <div class="section-label">Seção 4</div>
+    <h2>Nova Arquitetura <span class="tag tag-modern">Java Spring Boot</span></h2>
+    <p class="section-desc">Arquitetura em camadas bem definidas, com separação de responsabilidades, APIs REST e persistência via JPA/Hibernate.</p>
+    <div style="display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start;">
+      <div>
+        <div class="arch-diagram">
+          <div class="arch-layer layer-user">👤 Usuário / Cliente<div class="layer-sub">HTTP Request (REST / JSON)</div></div>
+          <div class="arch-arrow-down">⬇</div>
+          <div class="arch-layer layer-controller">Controller — API REST<div class="layer-sub">@RestController · Endpoints HTTP · Validação de entrada</div></div>
+          <div class="arch-arrow-down">⬇</div>
+          <div class="arch-layer layer-service">Service — Regras de Negócio<div class="layer-sub">@Service · Lógica de negócio · Orquestração · Transações</div></div>
+          <div class="arch-arrow-down">⬇</div>
+          <div class="arch-layer layer-repo">Repository — Persistência<div class="layer-sub">@Repository · JpaRepository · Queries JPQL</div></div>
+          <div class="arch-arrow-down">⬇</div>
+          <div class="arch-layer layer-db">🗄️ Banco de Dados<div class="layer-sub">PostgreSQL / H2 · JPA / Hibernate · Migrations</div></div>
+        </div>
+        <div class="arch-extras">
+          <div class="arch-extra-chip">Entity (JPA)</div>
+          <div class="arch-extra-chip">DTO (Request/Response)</div>
+          <div class="arch-extra-chip">Exceptions Handler</div>
+          <div class="arch-extra-chip">Testes (JUnit / Mockito)</div>
+          <div class="arch-extra-chip">Swagger / OpenAPI</div>
+          <div class="arch-extra-chip">Spring Security</div>
+        </div>
+      </div>
+      <div style="flex:1;min-width:240px;">
+        <h3 style="margin-bottom:14px;font-size:1rem;">Princípios Adotados</h3>
+        <div class="cards" style="grid-template-columns:1fr;">
+          <div class="card"><div class="card-icon" style="background:#e8f4ed;">🔗</div><h4>Separação de Responsabilidades</h4><p>Cada camada tem um papel claro: Controller (entrada), Service (lógica), Repository (dados).</p></div>
+          <div class="card"><div class="card-icon" style="background:#e8f4fd;">🔌</div><h4>API REST</h4><p>Endpoints padronizados em HTTP com contratos bem definidos e retorno em JSON.</p></div>
+          <div class="card"><div class="card-icon" style="background:#fef9e7;">🧪</div><h4>Testabilidade</h4><p>Cada camada pode ser testada de forma isolada com testes unitários e de integração.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. COMPARAÇÃO -->
+<section id="comparacao">
+  <div class="container">
+    <div class="section-label">Seção 5</div>
+    <h2>Comparação Antes × Depois</h2>
+    <p class="section-desc">Evolução direta do sistema legado para a solução modernizada.</p>
+    <div class="compare-grid">
+      <div class="compare-col">
+        <div class="compare-head before">✗ &nbsp;Antes — Informix Legado</div>
+        <div class="compare-body">
+          <div class="compare-item"><span class="ci-icon">🗄️</span><div><strong>Informix legado</strong><br><span style="color:var(--muted);font-size:.8rem;">Banco proprietário, ambiente fechado</span></div></div>
+          <div class="compare-item"><span class="ci-icon">🧱</span><div><strong>Arquitetura monolítica</strong><br><span style="color:var(--muted);font-size:.8rem;">Tudo em um único bloco, sem separação</span></div></div>
+          <div class="compare-item"><span class="ci-icon">🔗</span><div><strong>Código fortemente acoplado</strong><br><span style="color:var(--muted);font-size:.8rem;">Dependências circulares e difíceis de rastrear</span></div></div>
+          <div class="compare-item"><span class="ci-icon">⚙️</span><div><strong>Alterações complexas</strong><br><span style="color:var(--muted);font-size:.8rem;">Qualquer mudança exige testes manuais extensos</span></div></div>
+          <div class="compare-item"><span class="ci-icon">♻️</span><div><strong>Pouca reutilização</strong><br><span style="color:var(--muted);font-size:.8rem;">Código duplicado entre módulos</span></div></div>
+          <div class="compare-item"><span class="ci-icon">🔌</span><div><strong>Integrações limitadas</strong><br><span style="color:var(--muted);font-size:.8rem;">Difícil conectar com sistemas externos modernos</span></div></div>
+          <div class="compare-item"><span class="ci-icon">📉</span><div><strong>Escalabilidade restrita</strong><br><span style="color:var(--muted);font-size:.8rem;">Escalonamento vertical e caro</span></div></div>
+        </div>
+      </div>
+      <div class="compare-col">
+        <div class="compare-head after">✓ &nbsp;Depois — Java Spring Boot</div>
+        <div class="compare-body">
+          <div class="compare-item"><span class="ci-icon">☕</span><div><strong>Java Spring Boot</strong><br><span style="color:var(--muted);font-size:.8rem;">Ecossistema aberto, comunidade ativa</span></div></div>
+          <div class="compare-item"><span class="ci-icon">🏛️</span><div><strong>Arquitetura em camadas</strong><br><span style="color:var(--muted);font-size:.8rem;">Controller / Service / Repository bem definidos</span></div></div>
+          <div class="compare-item"><span class="ci-icon">✂️</span><div><strong>Código organizado</strong><br><span style="color:var(--muted);font-size:.8rem;">Separação de responsabilidades, baixo acoplamento</span></div></div>
+          <div class="compare-item"><span class="ci-icon">🔄</span><div><strong>APIs REST</strong><br><span style="color:var(--muted);font-size:.8rem;">Contratos claros, integração padronizada</span></div></div>
+          <div class="compare-item"><span class="ci-icon">🧪</span><div><strong>Testes automatizados</strong><br><span style="color:var(--muted);font-size:.8rem;">JUnit, Mockito, cobertura por camada</span></div></div>
+          <div class="compare-item"><span class="ci-icon">🌐</span><div><strong>Integrações modernas</strong><br><span style="color:var(--muted);font-size:.8rem;">REST, mensageria, cloud-native</span></div></div>
+          <div class="compare-item"><span class="ci-icon">📈</span><div><strong>Escalabilidade horizontal</strong><br><span style="color:var(--muted);font-size:.8rem;">Containers, microserviços, cloud</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6. ANTES E DEPOIS: ESTRUTURA DE DADOS -->
+<section id="dados-estrutura">
+  <div class="container">
+    <div class="section-label">Seção 6</div>
+    <h2>Antes e Depois: Estrutura de Dados</h2>
+    <p class="section-desc">Visualização comparativa de como os dados eram organizados no Informix legado e como ficaram representados na nova arquitetura Java Spring Boot.</p>
+
+    <div class="dados-grid">
+      <!-- PAINEL LEGADO -->
+      <div>
+        <div style="font-size:12px;font-weight:700;color:#c0392b;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">✗ Sistema Legado — Informix</div>
+        <div class="terminal-window">
+          <div class="terminal-titlebar">
+            <div class="dots">
+              <div class="dot-btn dot-red"></div>
+              <div class="dot-btn dot-yellow"></div>
+              <div class="dot-btn dot-green"></div>
+            </div>
+            <span class="title">informix@srv-legado:~$ isql sysmaster</span>
+          </div>
+          <div class="terminal-body">
+<span class="t-comment">-- Banco de Dados: SYSMASTER (Informix 12.10)</span><br>
+<span class="t-comment">-- Acesso via terminal 4GL</span><br>
+<br>
+<span class="t-prompt">DB &gt;</span> <span class="t-cmd">SELECT tabname FROM systables</span><br>
+<span class="t-cmd">&nbsp;&nbsp;&nbsp;&nbsp;WHERE owner = 'informix';</span><br>
+<br>
+<span class="t-header">&nbsp;&nbsp;tabname</span><br>
+<span class="t-divider">&nbsp;&nbsp;─────────────────</span><br>
+<span class="t-row">&nbsp;&nbsp;<span class="highlight">CLIENTE</span></span><br>
+<span class="t-row">&nbsp;&nbsp;<span class="highlight">PEDIDO</span></span><br>
+<span class="t-row">&nbsp;&nbsp;<span class="highlight">ITEM_PEDIDO</span></span><br>
+<span class="t-row">&nbsp;&nbsp;<span class="highlight">PRODUTO</span></span><br>
+<span class="t-divider">&nbsp;&nbsp;─────────────────</span><br>
+<span class="t-info">&nbsp;&nbsp;4 tabela(s) encontrada(s)</span><br>
+<br>
+<span class="t-prompt">DB &gt;</span> <span class="t-cmd">SELECT * FROM PEDIDO</span><br>
+<span class="t-cmd">&nbsp;&nbsp;&nbsp;&nbsp;WHERE rownum &lt;= 3;</span><br>
+<br>
+<span class="t-header">&nbsp;&nbsp;ID_PEDIDO&nbsp;&nbsp;ID_CLIENTE&nbsp;&nbsp;DATA_PEDIDO&nbsp;&nbsp;VALOR_TOTAL</span><br>
+<span class="t-divider">&nbsp;&nbsp;──────────────────────────────────────────────</span><br>
+<span class="t-row">&nbsp;&nbsp;<span class="highlight">001</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1001&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;20/07/2026&nbsp;&nbsp;&nbsp;250.00</span><br>
+<span class="t-row">&nbsp;&nbsp;<span class="highlight">002</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1003&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;21/07/2026&nbsp;&nbsp;&nbsp;89.90</span><br>
+<span class="t-row">&nbsp;&nbsp;<span class="highlight">003</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1001&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;22/07/2026&nbsp;&nbsp;&nbsp;1.420.50</span><br>
+<span class="t-divider">&nbsp;&nbsp;──────────────────────────────────────────────</span><br>
+<br>
+<span class="t-warn">&nbsp;&nbsp;[WARN] Sem validação de nível de aplicação</span><br>
+<span class="t-warn">&nbsp;&nbsp;[WARN] Regras em stored procedures SPL</span><br>
+          </div>
+        </div>
+        <div class="legacy-tags">
+          <span class="legacy-tag">Banco Relacional Legado</span>
+          <span class="legacy-tag">Estrutura Rígida</span>
+          <span class="legacy-tag">Dados Centralizados</span>
+          <span class="legacy-tag">Pouca Abstração</span>
+          <span class="legacy-tag">Stored Procedures SPL</span>
+        </div>
+      </div>
+
+      <!-- PAINEL MODERNO -->
+      <div>
+        <div style="font-size:12px;font-weight:700;color:#27ae60;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">✓ Sistema Modernizado — Java Spring Boot</div>
+        <div class="modern-window">
+          <div class="modern-titlebar">
+            <div class="m-dot"></div>
+            <span class="m-title">Pedido.java · PedidoRepository.java · API REST</span>
+          </div>
+          <div class="modern-body">
+            <div class="code-block">
+<span class="c-annotation">@Entity</span> <span class="c-annotation">@Table</span><span class="c-punct">(name = "pedidos")</span><br>
+<span class="c-keyword">public class</span> <span class="c-name">Pedido</span> <span class="c-punct">{</span><br>
+&nbsp;&nbsp;<span class="c-annotation">@Id</span> <span class="c-annotation">@GeneratedValue</span><br>
+&nbsp;&nbsp;<span class="c-keyword">private</span> <span class="c-type">Long</span> <span class="c-name">id</span><span class="c-punct">;</span><br>
+&nbsp;&nbsp;<span class="c-annotation">@ManyToOne</span><br>
+&nbsp;&nbsp;<span class="c-keyword">private</span> <span class="c-type">Cliente</span> <span class="c-name">cliente</span><span class="c-punct">;</span><br>
+&nbsp;&nbsp;<span class="c-annotation">@OneToMany</span><span class="c-punct">(mappedBy="pedido")</span><br>
+&nbsp;&nbsp;<span class="c-keyword">private</span> <span class="c-type">List&lt;ItemPedido&gt;</span> <span class="c-name">itens</span><span class="c-punct">;</span><br>
+&nbsp;&nbsp;<span class="c-keyword">private</span> <span class="c-type">BigDecimal</span> <span class="c-name">valorTotal</span><span class="c-punct">;</span><br>
+<span class="c-punct">}</span> <span class="c-comment">// regras preservadas via @Service</span>
+            </div>
+            <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">Fluxo de Camadas</div>
+            <div class="mini-layers">
+              <div class="mini-layer"><div class="mini-layer-box ml-ctrl">PedidoController</div><span style="font-size:11px;color:var(--muted);margin-left:8px;">recebe requisição REST</span></div>
+              <div style="padding-left:18px;color:var(--muted);font-size:13px;">↓</div>
+              <div class="mini-layer"><div class="mini-layer-box ml-svc">PedidoService</div><span style="font-size:11px;color:var(--muted);margin-left:8px;">aplica regras de negócio</span></div>
+              <div style="padding-left:18px;color:var(--muted);font-size:13px;">↓</div>
+              <div class="mini-layer"><div class="mini-layer-box ml-repo">PedidoRepository</div><span style="font-size:11px;color:var(--muted);margin-left:8px;">persiste via JPA</span></div>
+              <div style="padding-left:18px;color:var(--muted);font-size:13px;">↓</div>
+              <div class="mini-layer"><div class="mini-layer-box ml-db">🗄️ Banco de Dados</div><span style="font-size:11px;color:var(--muted);margin-left:8px;">PostgreSQL / H2</span></div>
+            </div>
+            <div style="margin-top:14px;">
+              <div class="mini-table-wrap">
+                <div class="mini-table-label">Tabela: pedidos</div>
+                <table class="mini-table">
+                  <thead><tr><th>id</th><th>cliente_id</th><th>valor_total</th><th>data</th></tr></thead>
+                  <tbody>
+                    <tr><td>1</td><td>1001</td><td>250.00</td><td>2026-07-20</td></tr>
+                    <tr><td>2</td><td>1003</td><td>89.90</td><td>2026-07-21</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="mini-table-wrap">
+                <div class="mini-table-label">Tabela: item_pedido</div>
+                <table class="mini-table">
+                  <thead><tr><th>id</th><th>pedido_id</th><th>produto_id</th><th>qtd</th></tr></thead>
+                  <tbody>
+                    <tr><td>1</td><td>1</td><td>501</td><td>2</td></tr>
+                    <tr><td>2</td><td>1</td><td>307</td><td>1</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modern-tags">
+          <span class="modern-tag">Entity</span>
+          <span class="modern-tag">DTO</span>
+          <span class="modern-tag">Repository</span>
+          <span class="modern-tag">API REST</span>
+          <span class="modern-tag">JPA / Hibernate</span>
+          <span class="modern-tag">Tipagem Forte</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pipeline de transformação -->
+    <div class="transform-pipeline">
+      <div class="pipe-node legacy-node">🗄️ &nbsp;Informix Legacy</div>
+      <div class="pipe-arrow">
+        <div class="pa-line"></div>
+        <div class="pa-head">↓</div>
+        <div class="pa-label">análise · extração · preservação</div>
+        <div class="pa-head">↓</div>
+        <div class="pa-line"></div>
+      </div>
+      <div class="pipe-node bob-node">✦ &nbsp;IBM BOB Modernization</div>
+      <div class="pipe-arrow">
+        <div class="pa-line"></div>
+        <div class="pa-head">↓</div>
+        <div class="pa-label">geração · refatoração · estruturação</div>
+        <div class="pa-head">↓</div>
+        <div class="pa-line"></div>
+      </div>
+      <div class="pipe-node modern-node">☕ &nbsp;Java Spring Boot</div>
+    </div>
+
+    <div class="bob-legend">
+      <div class="bob-legend-icon">✦</div>
+      <div class="bob-legend-text">
+        <h4>IBM BOB — Acelerador da Modernização</h4>
+        <p>O IBM BOB analisou o sistema legado, preservou as regras de negócio e acelerou a criação da nova arquitetura Java. As tabelas que existiam no Informix foram transformadas em entidades JPA tipadas, com relacionamentos explícitos, validações na camada de serviço e acesso padronizado via repositórios Spring Data.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 7. MÓDULO -->
+<section id="modulo">
+  <div class="container">
+    <div class="section-label">Seção 7</div>
+    <h2>Exemplo de Módulo Modernizado — Pedidos</h2>
+    <p class="section-desc">Demonstração da transformação do módulo de Pedidos do legado para a arquitetura Java.</p>
+    <div class="module-grid">
+      <div class="module-box">
+        <div class="module-head legacy">✗ Módulo Legado (Informix)</div>
+        <ul class="module-list">
+          <li>📄 Programa principal (4GL)</li>
+          <li>📄 Módulo de entrada de pedido</li>
+          <li>📄 Lógica de validação acoplada ao form</li>
+          <li>📄 Stored procedure: calc_total_pedido</li>
+          <li>📄 Stored procedure: atualiza_estoque</li>
+          <li>📄 Trigger: verifica_cliente</li>
+          <li>📄 Tabelas: pedidos, itens_pedido, clientes</li>
+        </ul>
+      </div>
+      <div class="module-box">
+        <div class="module-head modern">✓ Módulo Modernizado (Spring Boot)</div>
+        <ul class="module-list">
+          <li><span class="pill pill-entity">Entity</span> Pedido, ItemPedido, Cliente</li>
+          <li><span class="pill pill-dto">DTO</span> PedidoRequestDTO, PedidoResponseDTO</li>
+          <li><span class="pill pill-ctrl">Controller</span> PedidoController</li>
+          <li><span class="pill pill-svc">Service</span> PedidoService</li>
+          <li><span class="pill pill-repo">Repository</span> PedidoRepository</li>
+          <li><span class="pill pill-exc">Exception</span> PedidoNotFoundException, ClienteInvalidoException</li>
+          <li>🧪 PedidoServiceTest, PedidoControllerTest</li>
+        </ul>
+      </div>
+    </div>
+    <div class="rules-box">
+      <h4>Regras de Negócio Preservadas</h4>
+      <div class="rule-item"><span class="rule-check">✓</span> Validação de cliente ativo antes de criar pedido</div>
+      <div class="rule-item"><span class="rule-check">✓</span> Inclusão e validação de itens no pedido (quantidade, produto, preço)</div>
+      <div class="rule-item"><span class="rule-check">✓</span> Cálculo automático do valor total do pedido</div>
+      <div class="rule-item"><span class="rule-check">✓</span> Atualização de estoque ao confirmar pedido</div>
+      <div class="rule-item"><span class="rule-check">✓</span> Integridade referencial garantida via JPA + validações de domínio</div>
+      <div class="rule-item"><span class="rule-check">✓</span> Regras de status e transições de estado do pedido</div>
+    </div>
+  </div>
+</section>
+
+<!-- 8. BENEFÍCIOS -->
+<section id="beneficios">
+  <div class="container">
+    <div class="section-label">Seção 8</div>
+    <h2>Benefícios da Modernização</h2>
+    <p class="section-desc">Resultados alcançados com a migração para Java Spring Boot.</p>
+    <div class="cards">
+      <div class="benefit-card"><div class="benefit-num">01</div><h4>Código Organizado</h4><p>Arquitetura em camadas com responsabilidades bem definidas e fácil navegação para desenvolvedores.</p></div>
+      <div class="benefit-card"><div class="benefit-num">02</div><h4>Facilidade de Manutenção</h4><p>Alterações isoladas por camada sem impacto em cascata. Menor risco e menor tempo de entrega.</p></div>
+      <div class="benefit-card"><div class="benefit-num">03</div><h4>Maior Escalabilidade</h4><p>Pronto para deploy em containers, cloud e arquiteturas distribuídas com escalabilidade horizontal.</p></div>
+      <div class="benefit-card"><div class="benefit-num">04</div><h4>Integração com Novas Tecnologias</h4><p>APIs REST abertas, suporte a mensageria, autenticação moderna e conectores para qualquer sistema.</p></div>
+      <div class="benefit-card"><div class="benefit-num">05</div><h4>Redução de Esforço Futuro</h4><p>Testes automatizados garantem regressão contínua. Menor custo de manutenção a longo prazo.</p></div>
+      <div class="benefit-card"><div class="benefit-num">06</div><h4>Padronização Arquitetural</h4><p>Padrões reconhecidos pelo mercado (MVC, REST, JPA) facilitam onboarding de novos desenvolvedores.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 9. CONCLUSÃO -->
+<section id="conclusao">
+  <div class="container">
+    <div class="section-label" style="color:#7c8fa8;">Seção 9 · Conclusão</div>
+    <h2>Sistema Modernizado e Preparado para o Futuro</h2>
+    <p>A modernização transformou uma aplicação legada Informix em uma solução Java Spring Boot moderna, mantendo as regras de negócio existentes e preparando o sistema para evolução futura com tecnologias abertas, times produtivos e arquitetura sustentável.</p>
+    <div style="display:flex;gap:32px;justify-content:center;flex-wrap:wrap;margin-top:28px;">
+      <div style="text-align:center;"><div style="font-size:2.2rem;font-weight:800;color:#90ee90;">100%</div><div style="font-size:12px;color:#7c8fa8;">Regras Preservadas</div></div>
+      <div style="text-align:center;"><div style="font-size:2.2rem;font-weight:800;color:#87ceeb;">6</div><div style="font-size:12px;color:#7c8fa8;">Camadas Bem Definidas</div></div>
+      <div style="text-align:center;"><div style="font-size:2.2rem;font-weight:800;color:#c9b8f5;">0</div><div style="font-size:12px;color:#7c8fa8;">Dependências Legadas</div></div>
+    </div>
+    <div class="conclusion-chips">
+      <div class="conclusion-chip">Java Spring Boot</div>
+      <div class="conclusion-chip">REST API</div>
+      <div class="conclusion-chip">JPA / Hibernate</div>
+      <div class="conclusion-chip">Testes Automatizados</div>
+      <div class="conclusion-chip">IBM BOB</div>
+      <div class="conclusion-chip">Cloud Ready</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span>Modernização Informix → Java Spring Boot · IBM BOB &nbsp;|&nbsp; Made with IBM Bob</span>
+</footer>
+
+</body>
+</html>
